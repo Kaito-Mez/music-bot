@@ -78,6 +78,7 @@ class discordBook:
         self.pg_count += 1
 
         #adds the page to the dict
+        print(self.embed_data)
         self.pages.update({self.pg_count:self.embed_data})
         
         #Adds the reacts to the reacts dict
@@ -142,7 +143,9 @@ class discordBook:
         if self.message != None:
             print('running this')
             await self.unsend_book()
+        
 
+        print(self.pages[1])
         self.message = await channel.send(embed = Embed.from_dict(self.pages[1]))
         self.current_page = 1
 

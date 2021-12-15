@@ -1,0 +1,38 @@
+[
+    {
+        "reacts": [
+            "⏮️",
+            "⏯️",
+            "⏭️",
+            "⏹️"
+        ],
+        "title": "testing",
+        "description": "",
+        "author": {
+            "name": ""
+        },
+        "fields": [
+            {"name": "name",
+            "value": "value"}
+        ],
+        "image": {
+            "url": null
+        },
+        "video": {
+            "url": null
+        },
+        "thumbnail": {
+            "url": "https://images-ext-2.discordapp.net/external/2ITLZXLv69CjihQwC1m9pyqIdKodM8i5ogKvPj2Vbfk/%3Fwidth%3D669%26height%3D671/https/images-ext-2.discordapp.net/external/raqJTvuQaf4RQC1J189TuTpRHVfnqbX285zyEoSWCQk/https/cdn.discordapp.com/attachments/366497342934745088/554176583120977921/SSEA_Logo.png?width=668&height=670"
+        },
+        "footer": {
+            "text": ""
+        },
+        "timestamp": null,
+        "url": "",
+        "colour": [
+            34,
+            171,
+            128
+        ]
+    }
+]

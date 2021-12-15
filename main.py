@@ -6,7 +6,7 @@ from sclib import SoundcloudAPI, Track, Playlist
 import pytube
 
 import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
+from spotipy.oauth2 import SpotifyClientCredentials
 
 scope = "user-library-read"
 
@@ -14,21 +14,29 @@ sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="b58cdb1e53
 
 for i in sp.track("https://open.spotify.com/track/40QjbtQ2GJigjUgVNiDiqJ?si=b1d66878a5dc4638"):
     print(i)
-    
+
+print(sp.track("https://open.spotify.com/track/40QjbtQ2GJigjUgVNiDiqJ?si=b1d66878a5dc4638")["name"])
 for i in sp.track("https://open.spotify.com/track/40QjbtQ2GJigjUgVNiDiqJ?si=b1d66878a5dc4638")["artists"]:
     print(i["name"])
+
+
+
+#youtube
 s = pytube.Search("run by i am the kid you know what i mean")
 link = s.results[0].watch_url
+print(s.results[0].thumbnail_url)
 yt = pytube.YouTube(link)
 for i in yt.streams:
-    #print(i)
+    print(i)
     pass
+yt.streams.get_by_itag(251).download()
 
-#yt.streams.get_by_itag(251).download()
+#soundcloud
 api = SoundcloudAPI(client_id="0QQbTpZ8EsXI2Oz2cY45hz88oskRPlNY")  # never pass a Soundcloud client ID that did not come from this library
 
 track = api.resolve('https://soundcloud.com/ninjaerx/the-prodigy-voodoo-people')
 
+print(track.artwork_url)
 assert type(track) is Track
 
 filename = f'./{track.artist} - {track.title}.mp3'
