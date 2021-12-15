@@ -5,6 +5,7 @@ from sclib import SoundcloudAPI, Track
 from disc_gui import discordBook
 import discord
 import pytube
+import asyncio
 
 class MusicBot(discord.Client):
 
@@ -27,8 +28,25 @@ class MusicBot(discord.Client):
         print(result)
 
 
+    async def do(self):        
+        def my_after(vc):
+            fut = asyncio.run_coroutine_threadsafe(vc.disconnect(), client.loop)
+            try:
+                fut.result()
+            except:
+                pass
+
+        try:
+            vc = await self.get_channel(738231254905782317).connect(reconnect = True)
+            vc.play(discord.FFmpegPCMAudio("sound/Korn - Twist.webm"), after = lambda _:my_after(vc))
+        except discord.errors.ClientException as e:
+            print("PLAYER FAILURE")
+            print(e)
+
     async def on_ready(self):
         ch = self.get_channel(738233500301394001)
+
+        await self.do()
         await self.ui.send_book(ch)
         print("Bot Online!")
         print("Name: {}".format(self.user.name))
