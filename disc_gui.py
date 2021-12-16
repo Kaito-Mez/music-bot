@@ -78,7 +78,6 @@ class discordBook:
         self.pg_count += 1
 
         #adds the page to the dict
-        print(self.embed_data)
         self.pages.update({self.pg_count:self.embed_data})
         
         #Adds the reacts to the reacts dict
@@ -143,9 +142,7 @@ class discordBook:
         if self.message != None:
             print('running this')
             await self.unsend_book()
-        
 
-        print(self.pages[1])
         self.message = await channel.send(embed = Embed.from_dict(self.pages[1]))
         self.current_page = 1
 
@@ -268,15 +265,18 @@ class discordBook:
 
     #needs to be called in a loop in order to get multiple responses
     #returns the index number of whatever react gets clicked
-    async def check_for_react(self, user):
+    async def handle_react(self, reaction, responder):
         
         #only lets the message past if the responder is the author
-        def check(reaction, responder):
-            return(responder == user)
-                   
-        print('starting check')
-        reaction, responder = await self.client.wait_for(event='reaction_add', check=check)
+        def check(responder):
+            return(responder != self.client.user and reaction.message == self.message)
+
+        if not check(responder):
+            return -1
+            
         print('responder is {}'.format(responder))
+
+        user = responder
 
         #handles response after receiving it
         if self.use_preset_reacts == True:
@@ -299,6 +299,7 @@ class discordBook:
                 elif str(reaction) == '🗑':
                     await self.unsend_book()
                     #returns 0 to signal that the loop should stop
+                    print("GARBAGE")
                     return(0)
 
         #returns a value based on index of the emote in the relevant emote list
@@ -310,40 +311,43 @@ class discordBook:
 
             #makes it so the 1st emote in the list returns 1 as 0 is reserved for deleting the page
             index = self.reacts[self.current_page].index(str(reaction))
+            print("RESULT", (index+1))
             return(index+1)
 
 
-'''
+
 #creating and populating a json file with python
-data = [{
-    'reacts':['💢', '🗿'],
-    'title':'testing',
-    'description':'',
-    'author':{'name':''},
-    'fields':[['','',True],['','',False]],
-    'image':{'url':None},
-    'video':{'url':None},
-    'thumbnail':{'url':'https://images-ext-2.discordapp.net/external/2ITLZXLv69CjihQwC1m9pyqIdKodM8i5ogKvPj2Vbfk/%3Fwidth%3D669%26height%3D671/https/images-ext-2.discordapp.net/external/raqJTvuQaf4RQC1J189TuTpRHVfnqbX285zyEoSWCQk/https/cdn.discordapp.com/attachments/366497342934745088/554176583120977921/SSEA_Logo.png?width=668&height=670'},
-    'footer':{'text':''},
-    'timestamp':None,
-    'url':None,
-    'colour':[34, 171, 128]
-    },
-    {
-    'reacts':['💢', '🗿'],
-    'title':'',
-    'description':'',
-    'author':{'name':''},
-    'fields':[['','',True],['','',False]],
-    'image':{'url':None},
-    'video':{'url':None},
-    'thumbnail':{'url':'https://images-ext-2.discordapp.net/external/2ITLZXLv69CjihQwC1m9pyqIdKodM8i5ogKvPj2Vbfk/%3Fwidth%3D669%26height%3D671/https/images-ext-2.discordapp.net/external/raqJTvuQaf4RQC1J189TuTpRHVfnqbX285zyEoSWCQk/https/cdn.discordapp.com/attachments/366497342934745088/554176583120977921/SSEA_Logo.png?width=668&height=670'},
-    'footer':{'text':''},
-    'timestamp':None,
-    'url':None,
-    'colour':[34, 171, 128]
-    }]
-with open('data/test.json', 'w', encoding='utf8') as testfile:
-    #new =json.load(testfile)
-    #print(new['entry']+1)
-    json.dump(data, testfile, indent=4, ensure_ascii=False)'''
+
+if __name__ == "__main__":
+    data = [{
+        'reacts':['💢', '🗿'],
+        'title':'testing',
+        'description':'',
+        'author':{'name':''},
+        'fields':[['','',True],['','',False]],
+        'image':{'url':None},
+        'video':{'url':None},
+        'thumbnail':{'url':'https://images-ext-2.discordapp.net/external/2ITLZXLv69CjihQwC1m9pyqIdKodM8i5ogKvPj2Vbfk/%3Fwidth%3D669%26height%3D671/https/images-ext-2.discordapp.net/external/raqJTvuQaf4RQC1J189TuTpRHVfnqbX285zyEoSWCQk/https/cdn.discordapp.com/attachments/366497342934745088/554176583120977921/SSEA_Logo.png?width=668&height=670'},
+        'footer':{'text':''},
+        'timestamp':None,
+        'url':None,
+        'colour':[34, 171, 128]
+        },
+        {
+        'reacts':['💢', '🗿'],
+        'title':'',
+        'description':'',
+        'author':{'name':''},
+        'fields':[['','',True],['','',False]],
+        'image':{'url':None},
+        'video':{'url':None},
+        'thumbnail':{'url':'https://images-ext-2.discordapp.net/external/2ITLZXLv69CjihQwC1m9pyqIdKodM8i5ogKvPj2Vbfk/%3Fwidth%3D669%26height%3D671/https/images-ext-2.discordapp.net/external/raqJTvuQaf4RQC1J189TuTpRHVfnqbX285zyEoSWCQk/https/cdn.discordapp.com/attachments/366497342934745088/554176583120977921/SSEA_Logo.png?width=668&height=670'},
+        'footer':{'text':''},
+        'timestamp':None,
+        'url':None,
+        'colour':[34, 171, 128]
+        }]
+    with open('data/screen.json', 'w', encoding='utf8') as testfile:
+        #new =json.load(testfile)
+        #print(new['entry']+1)
+        json.dump(data, testfile, indent=4, ensure_ascii=False)

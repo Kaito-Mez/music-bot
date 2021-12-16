@@ -1,4 +1,6 @@
+from asyncio.coroutines import coroutine
 from concurrent.futures.thread import ThreadPoolExecutor
+from discord.opus import load_opus
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
 from sclib import SoundcloudAPI, Track
@@ -23,9 +25,7 @@ class MusicBot(discord.Client):
         if message.author == client.user:
             return
         #add new song from message
-        print(type(message.content))
-        result = self.executor.submit(self.download, message.content)
-        print(result)
+        #result = self.executor.submit(self.download, message.content)
 
 
     async def do(self):        
@@ -46,7 +46,9 @@ class MusicBot(discord.Client):
     async def on_ready(self):
         ch = self.get_channel(738233500301394001)
 
-        await self.do()
+        #await self.do()
+
+        
         await self.ui.send_book(ch)
         print("Bot Online!")
         print("Name: {}".format(self.user.name))
@@ -54,7 +56,15 @@ class MusicBot(discord.Client):
         print("Version: {}".format(discord.__version__))
         print(discord.opus.is_loaded())
 
-    
+
+    async def on_reaction_add(self, reaction, user):
+        result = await self.ui.handle_react(reaction, user)
+        if result == -1:
+            return
+        
+        else:
+            print(result)
+
     def _get_spotify_auth(self):
         data = []
         with open("data/spotifyToken.txt", "r") as f:
@@ -119,6 +129,7 @@ class MusicBot(discord.Client):
             track.write_mp3_to(fp)
         
         return [filename, track.artwork_url]
+
 
 
 
