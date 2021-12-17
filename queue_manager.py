@@ -8,8 +8,8 @@ class Queue_Manager():
         if self.list.length() == 1:
             self.current = self.list[self.index]
         
-    def remove(self, filename:str):
-        self.list.remove(filename)
+    def remove(self):
+        self.__init__()
     def backtrack(self):
         if self.index > 0:
             self.index -= 1
