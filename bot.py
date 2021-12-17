@@ -1,124 +1,148 @@
-from concurrent.futures.thread import ThreadPoolExecutor
-from spotipy import Spotify
-from spotipy.oauth2 import SpotifyClientCredentials
-from sclib import SoundcloudAPI, Track
 from disc_gui import discordBook
+from queue_manager import QueueManager
 import discord
-import pytube
 import asyncio
 
 class MusicBot(discord.Client):
 
     def __init__(self):
-        self.executor = ThreadPoolExecutor()
 
+        self.vc = None
+        self.connected = False
+        self.channel = None
+        self.queue = QueueManager()
         self.ui = discordBook(self, False, "data/screen.json")
-        auth = self._get_spotify_auth()
-        self.spotify = Spotify(auth_manager=SpotifyClientCredentials(client_id=auth[0], client_secret=auth[1]))
-        self.soundcloud = SoundcloudAPI(client_id=self._get_soundcloud_auth())
         super().__init__()
 
     async def on_message(self, message):
-
+        
         if message.author == client.user:
             return
+
+        
         #add new song from message
-        print(type(message.content))
-        result = self.executor.submit(self.download, message.content)
-        print(result)
+        self.queue.add(message.content)
+        #result = self.executor.submit(self.download, message.content)
 
-
-    async def do(self):        
+    def handle_after(self):
+        print("doing after")
+        if self.queue.advance:
+            client.loop.run_until_complete(self.play_audio)
+            #asyncio.run_coroutine_threadsafe(self.play_audio, client.loop)
+        
+        else:
+            asyncio.run_coroutine_threadsafe(self.leave_channel, client.loop)
+    
+    async def play_audio(self):    
         def my_after(vc):
-            fut = asyncio.run_coroutine_threadsafe(vc.disconnect(), client.loop)
+            fut = asyncio.run_coroutine_threadsafe(vc.disconnect, client.loop)
             try:
                 fut.result()
             except:
                 pass
+        
+        #self.vc.play(discord.FFmpegPCMAudio(self.queue.get_file()), after = lambda _:my_after(self.vc))
+        if self.connected:
+            if self.queue.current == None:
+                if self.queue.is_downloading:
+                    while self.queue.is_downloading:
+                        print("awaiting download")
+                        asyncio.sleep(0.5)
+                        print("playing")
+                    self.vc.play(discord.FFmpegPCMAudio(self.queue.get_file()), after = lambda _:self.handle_after())
+            else:
+                print("playing 2")
+                print("THINGS GO HERE")
+                print(f"{self.vc}, {self.queue}, {self.queue.get_file()}")
+                self.vc.play(discord.FFmpegPCMAudio(self.queue.get_file()), after = lambda _:self.handle_after())
+
+    async def stop_audio(self):
+        if self.connected:
+            try:
+                self.vc.stop()
+                await self.leave_channel()
+            except discord.errors.ClientException as e:
+                print("stop audio failed", e)
+            finally:
+                self.queue.clear()
+
+    async def handle_play_pause(self, member):
+        if not self.connected:
+            await self.join_channel(member.voice.channel.id)
+
+        else:
+            if self.vc.is_playing():
+                await self.pause_audio()
+            elif self.vc.is_paused():
+                await self.resume_audio()
+            else:
+                await self.play_audio()
+
+    async def resume_audio(self):
+        if self.connected:
+            try:
+                self.vc.resume()
+            except discord.errors.ClientException as e:
+                print("resume audio failed", e)
+
+    async def pause_audio(self):
+        if self.connected:
+            try:
+                self.vc.pause()
+                
+            except discord.errors.ClientException as e:
+                print("pause audio failed", e)
+
+    async def join_channel(self, channel):
 
         try:
-            vc = await self.get_channel(738231254905782317).connect(reconnect = True)
-            vc.play(discord.FFmpegPCMAudio("sound/Korn - Twist.webm"), after = lambda _:my_after(vc))
+            print(channel)
+            self.vc = await self.get_channel(channel).connect(reconnect = True)
+            self.connected = True
+            print(f"vc = {self.vc}")
         except discord.errors.ClientException as e:
-            print("PLAYER FAILURE")
+            self.vc = None
+            self.connected = False
             print(e)
+    
+    async def leave_channel(self):
+        try:
+            await self.vc.disconnect()
+            self.connected = False
+        except discord.errors.ClientException as e:
+            print("Leave_channel_broke", e)
 
     async def on_ready(self):
-        ch = self.get_channel(738233500301394001)
+        for channel in self.get_all_channels():
+            if channel.name == "music":
+                self.channel = channel
+                await self.ui.send_book(self.channel)
 
-        await self.do()
-        await self.ui.send_book(ch)
+        #await self.do()
+
+        
         print("Bot Online!")
         print("Name: {}".format(self.user.name))
         print("ID: {}".format(self.user.id))
         print("Version: {}".format(discord.__version__))
         print(discord.opus.is_loaded())
 
-    
-    def _get_spotify_auth(self):
-        data = []
-        with open("data/spotifyToken.txt", "r") as f:
-            data.append(f.readline())
 
-        with open("data/spotifySecret.txt", "r") as f:
-            data.append(f.readline())
-
-        return data
-
-    def _get_soundcloud_auth(self):
-        with open("data/soundcloudToken.txt", "r") as f:
-            data = f.readline()
-        return data
-
-
-    def download(self, searchterm):
-        print(searchterm)
-        data = []
-        if "spotify.com" in searchterm:
-            data = self.download_sp(searchterm)
-
-        elif "soundcloud.com" in searchterm:
-            data = self.download_sc(searchterm)
+    async def on_reaction_add(self, reaction, member):
+        result = await self.ui.handle_react(reaction, member)
+        if result == -1:
+            return
         
-        else:
-            data = self.download_yt(searchterm)
+        elif result == 2:
+            await self.handle_play_pause(member)
 
-        return data
+        elif result == 4:
+            await self.stop_audio()
 
-        
+        print(result)
 
-    def download_sp(self, url):
-        print("SPOTIFY")
-        searchterm = ""
-        track = self.spotify.track(url)
-        searchterm += track["name"]
-        for i in track["artists"]:
-            searchterm += " "
-            searchterm += i["name"]
 
-        return self.download_yt(searchterm)
-        
 
-    def download_yt(self, searchterm):
-        print("YOUTUBE")
-        search = pytube.Search(searchterm)
-        url = search.results[0].watch_url
-        yt = pytube.YouTube(url)
-        print(yt.title)
-        yt.streams.get_by_itag(251).download("sound", yt.title+".webm")
-        
-        return [yt.title, yt.thumbnail_url]
-
-    def download_sc(self, url):
-        print("SOUNDCLOUD")
-        track = self.soundcloud.resolve(url)
-
-        filename = f'{track.artist} {track.title}.mp3'
-
-        with open("sound/" + filename, 'wb+') as fp:
-            track.write_mp3_to(fp)
-        
-        return [filename, track.artwork_url]
 
 
 
