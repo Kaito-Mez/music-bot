@@ -28,11 +28,14 @@ class MusicBot(discord.Client):
             print("is User Connected", False)
             return False
 
-    def _is_user_in_call(self, member):
+    def _is_same_call(self, member):
         if member.voice.channel != None and self.connected:
-            if member.voice.channel == client.user.voice.channel:
+            print("is User in same call", "Maybe")
+            if member.voice.channel == self.vc.channel:
+                print("is User in same call", True)
                 return True
 
+        print("is User in same call", False)
         return False
 
     async def on_message(self, message):
@@ -51,14 +54,16 @@ class MusicBot(discord.Client):
         print(f"AFTER {self.queue.current}, {self.queue.list}")
         if self.queue.advance():
             print(f"ADVANCE TRUE {self.queue.current}")
+            asyncio.run_coroutine_threadsafe(self.update_player_info(), client.loop)
             asyncio.run_coroutine_threadsafe(self.play_audio(), client.loop)
         
         else:
             print(f"ADVANCE False {self.queue.current}")
+            asyncio.run_coroutine_threadsafe(self.update_player_info(), client.loop)
             asyncio.run_coroutine_threadsafe(self.leave_channel(), client.loop)
+        
     
     async def play_audio(self):
-        await self.update_player_info()
 
         if self.connected:
             if self.queue.current == None:
@@ -88,13 +93,13 @@ class MusicBot(discord.Client):
     async def handle_play_pause(self, member):
 
         if not self.connected:
-            if self._is_user_in_call(member):
+            if self._is_user_connected(member):
                 await self.join_channel(member.voice.channel.id)
             else:
                 return
 
         if self.connected:
-            if self._is_user_in_call(member):
+            if self._is_same_call(member):
                 if self.vc.is_playing():
                     await self.pause_audio()
                 elif self.vc.is_paused():
@@ -198,7 +203,9 @@ class MusicBot(discord.Client):
             if index == self.queue.index:
                 value += "***"
             
-            value += item[0].replace(".webm", "").replace(".mp3", "")
+            #value += item[0].replace("webm", "").replace("mp3", "").replace("-", " ")
+
+            value += item[2]
 
             if index == self.queue.index:
                 value += "***"

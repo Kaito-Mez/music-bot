@@ -121,19 +121,21 @@ class QueueManager():
 
 
         print(yt.title)
-        filename = yt.title+".webm"
-        filename = slugify(filename)
+        filename = slugify(yt.title)
+        filename += ".webm"
         yt.streams.get_by_itag(251).download("sound", filename)
-        return [filename, yt.thumbnail_url]
+        return [filename, yt.thumbnail_url, yt.title]
 
     def _download_sc(self, url):
         print("SOUNDCLOUD")
         track = self.soundcloud.resolve(url)
 
-        filename = f'{track.artist} {track.title}.mp3'
+        filename = f'{track.artist} {track.title}'
         filename = slugify(filename)
+        filename += ".mp3"
+        title = f'{track.artist} {track.title}'
 
         with open("sound/" + filename, 'wb+') as fp:
             track.write_mp3_to(fp)
         
-        return [filename, track.artwork_url]
+        return [filename, track.artwork_url, title]

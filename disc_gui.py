@@ -75,7 +75,8 @@ class discordBook:
             'thumbnail':thumbnail,
             'footer':footer,
             'timestamp':timestamp,
-            'url':url
+            'url':url,
+            'reacts':reacts
             }
         
         self.pg_count += 1
@@ -97,10 +98,8 @@ class discordBook:
 
         for key in modded_page:
             if key == 'fields':
-                print('fields key')
                 modded_page[key] = []
                 for item in kwargs.get(key, None):
-                    print(item)
                     modded_page[key].append(item)
 
                     #modded_page[key][kwargs.get(key, None).index(item)].update(item)
@@ -125,9 +124,6 @@ class discordBook:
 
         if permanent:
             with open(self.data_file, 'w', encoding='utf8') as dumpfile:
-                print(self.pages)
-                for i in self.pages:
-                    print(i)
 
                 data = []
                 pagenums = self.pages.keys()
