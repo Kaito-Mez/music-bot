@@ -76,6 +76,7 @@ class MusicBot(discord.Client):
     async def stop_audio(self):
         if self.connected:
             try:
+                self.vc.play(discord.FFmpegPCMAudio("data/effects/exit.webm"), after = None)
                 self.vc.stop()
                 await self.leave_channel()
             except discord.errors.ClientException as e:
