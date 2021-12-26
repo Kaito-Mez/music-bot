@@ -59,7 +59,6 @@ class MusicBot(discord.Client):
         
         else:
             print(f"ADVANCE False {self.queue.current}")
-            asyncio.run_coroutine_threadsafe(self.update_player_info(), client.loop)
             asyncio.run_coroutine_threadsafe(self.leave_channel(), client.loop)
         
     
@@ -81,7 +80,6 @@ class MusicBot(discord.Client):
     async def stop_audio(self):
         if self.connected:
             try:
-                self.vc.play(discord.FFmpegPCMAudio("data/effects/exit.webm"), after = None)
                 self.vc.stop()
                 await self.leave_channel()
             except discord.errors.ClientException as e:
@@ -148,11 +146,16 @@ class MusicBot(discord.Client):
             print(e)
     
     async def leave_channel(self):
-        try:
-            await self.vc.disconnect()
-            self.connected = False
-        except discord.errors.ClientException as e:
-            print("Leave_channel_broke", e)
+        print("YEAH RIGHT")
+        if self.connected:
+            try:
+                
+                print("Innas")
+                time.sleep(1)
+                self.vc.play(discord.FFmpegPCMAudio("data/sounds/exit.webm"), after= lambda _:asyncio.run_coroutine_threadsafe(self.vc.disconnect(), client.loop))
+                self.connected = False
+            except discord.errors.ClientException as e:
+                print("Leave_channel_broke", e)
 
     async def on_ready(self):
         for channel in self.get_all_channels():
