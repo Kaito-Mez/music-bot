@@ -1,3 +1,4 @@
+from django.utils.text import slugify
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
 from sclib import SoundcloudAPI, Track
@@ -42,11 +43,12 @@ class QueueManager():
         self.is_downloading = False
 
 
-    def add(self, searchterm:str):
+    def add(self, searchterm:str, callback=None):
         self.is_downloading = True
         future = self.executor.submit(self._download, searchterm)
         future.add_done_callback(self._on_download)
-        print("First Hopefullty")
+        if callback != None:
+            future.add_done_callback(callback)
 
     def clear(self):
         print("triggered")
@@ -58,15 +60,15 @@ class QueueManager():
         if self.index > 0:
             self.index -= 1
             self.current = self.list[self.index]
-            return True
-        
-        return False
 
     def advance(self):
         if self.index == len(self.list) - 1 or len(self.list) == 0:
+            self.index = len(self.list)
+            self.current = None
             return False
 
         else:
+            print("INDEX BEFORE INCREMENT " + str(self.index))
             self.index += 1
             self.current = self.list[self.index]
             return True
@@ -107,11 +109,20 @@ class QueueManager():
 
     def _download_yt(self, searchterm):
         print("YOUTUBE")
-        search = pytube.Search(searchterm)
-        url = search.results[0].watch_url
-        yt = pytube.YouTube(url)
+        print(f"SEARCHTERM:{searchterm}")
+        if "https://www.youtube.com/watch?v=" in searchterm or "https://youtu.be/" in searchterm:
+            yt = pytube.YouTube(searchterm)
+        
+        else:
+            search = pytube.Search(searchterm)
+            url = search.results[0].watch_url
+            print(f"URL: {url}")
+            yt = pytube.YouTube(url)
+
+
         print(yt.title)
         filename = yt.title+".webm"
+        filename = slugify(filename)
         yt.streams.get_by_itag(251).download("sound", filename)
         return [filename, yt.thumbnail_url]
 
@@ -120,6 +131,7 @@ class QueueManager():
         track = self.soundcloud.resolve(url)
 
         filename = f'{track.artist} {track.title}.mp3'
+        filename = slugify(filename)
 
         with open("sound/" + filename, 'wb+') as fp:
             track.write_mp3_to(fp)

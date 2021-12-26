@@ -4,6 +4,8 @@ from discord import Embed
 import asyncio
 import json
 
+from discord import colour
+
 #implement the multiple page system
 #figure out how to update reactions faster/in parallel
 
@@ -50,12 +52,12 @@ class discordBook:
                 page['footer'],
                 page['timestamp'],
                 page['url'],
-                page['colour'],
+                page['color'],
                 page['reacts']
                 )
 
     #appends an embed dictionary to the page dict
-    def new_page(self, title, author, description, fields, image, video, thumbnail, footer, timestamp, url, colour, reacts=[]):
+    def new_page(self, title, author, description, fields, image, video, thumbnail, footer, timestamp, url, color, reacts=[]):
         #data for making the embed
         self.embed_data = {
             #Compulsory data
@@ -66,7 +68,8 @@ class discordBook:
             'fields':fields,
             
             #Non compulsory data
-            'color':discord.Colour.from_rgb(colour[0], colour[1], colour[2]).value,
+            #discord.Colour.from_rgb(color[0], color[1], color[2]).value
+            'color':color,
             'image':image,
             'video':video,
             'thumbnail':thumbnail,
@@ -95,10 +98,12 @@ class discordBook:
         for key in modded_page:
             if key == 'fields':
                 print('fields key')
+                modded_page[key] = []
                 for item in kwargs.get(key, None):
-                    print(modded_page[key][kwargs.get(key, None).index(item)])
                     print(item)
-                    modded_page[key][kwargs.get(key, None).index(item)].update(item)
+                    modded_page[key].append(item)
+
+                    #modded_page[key][kwargs.get(key, None).index(item)].update(item)
             else:
                 modded_page.update({key:kwargs.get(key, modded_page[key])})
         
@@ -116,11 +121,22 @@ class discordBook:
         modded_page.update({'url':kwargs.get('url', modded_page['url'])})'''
         
         #sends the new data into the big page dict
-        self.pages[page_num].update({page_num:modded_page})
+        #self.pages[page_num].update({page_num:modded_page})
 
-        if permanent == True:
-            with open(self.data_file, 'r', encoding='utf8') as dumpfile:
-                json.dump(self.pages, dumpfile, indent=4)
+        if permanent:
+            with open(self.data_file, 'w', encoding='utf8') as dumpfile:
+                print(self.pages)
+                for i in self.pages:
+                    print(i)
+
+                data = []
+                pagenums = self.pages.keys()
+                pagenums = sorted(pagenums)
+
+                for i in pagenums:
+                    data.append(self.pages[i])
+
+                json.dump(data, dumpfile, indent=4)
 
     #removes a page from the dictionary NOT TESTED YET
     def remove_page(self, page_num):
@@ -311,7 +327,6 @@ class discordBook:
 
             #makes it so the 1st emote in the list returns 1 as 0 is reserved for deleting the page
             index = self.reacts[self.current_page].index(str(reaction))
-            print("RESULT", (index+1))
             return(index+1)
 
 
@@ -331,7 +346,7 @@ if __name__ == "__main__":
         'footer':{'text':''},
         'timestamp':None,
         'url':None,
-        'colour':[34, 171, 128]
+        'color':[34, 171, 128]
         },
         {
         'reacts':['💢', '🗿'],
@@ -345,9 +360,10 @@ if __name__ == "__main__":
         'footer':{'text':''},
         'timestamp':None,
         'url':None,
-        'colour':[34, 171, 128]
+        'color':[34, 171, 128]
         }]
+    '''
     with open('data/screen.json', 'w', encoding='utf8') as testfile:
         #new =json.load(testfile)
         #print(new['entry']+1)
-        json.dump(data, testfile, indent=4, ensure_ascii=False)
+        json.dump(data, testfile, indent=4, ensure_ascii=False)'''
