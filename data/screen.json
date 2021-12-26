@@ -1,27 +1,18 @@
 [
     {
-        "reacts": [
-            "⏮️",
-            "⏯️",
-            "⏭️",
-            "⏹️"
-        ],
         "title": "Music Player",
         "description": "description",
         "author": {
             "name": "author"
         },
         "fields": [
-            {"name": "Queue:",
-            "value": "Jack Ü x Ekali x Gravez Mind (Karol Tip Edit)\nSong2\n***Song3***\nSong4",
-            "inline": true},
-            {"name": "Queue:",
-            "value": "Jack Ü x Ekali x Gravez Mind (Karol Tip Edit)\nSong2\n***Song3***\nSong4",
-            "inline": true},
-            {"name": "Queue:",
-            "value": "Jack Ü x Ekali x Gravez Mind (Karol Tip Edit)\nSong2\n***Song3***\nSong4",
-            "inline": true}
+            {
+                "name": "Queue:",
+                "inline": true,
+                "value": "Bazanji - Beachside (feat. Jackson Breit)\nCHROME BERETTA - $ATORI ZOOM x VOID x 1NONLY x LEX PAIN\nYung Kage - XXXKIRBY (feat. Yumi)\n1 Hour of Jazzy Doomer Music [INFINITE REUPLOAD SAGA EDITION]\nOh hey is that Kevin?\nHi Me In 5 Years\nAdele - Hello\nHow to do a lateral flow device test\n***Drum Machine***\n"
+            }
         ],
+        "color": 2272128,
         "image": {
             "url": null
         },
@@ -29,13 +20,18 @@
             "url": null
         },
         "thumbnail": {
-            "url": "https://images-ext-2.discordapp.net/external/2ITLZXLv69CjihQwC1m9pyqIdKodM8i5ogKvPj2Vbfk/%3Fwidth%3D669%26height%3D671/https/images-ext-2.discordapp.net/external/raqJTvuQaf4RQC1J189TuTpRHVfnqbX285zyEoSWCQk/https/cdn.discordapp.com/attachments/366497342934745088/554176583120977921/SSEA_Logo.png?width=668&height=670"
+            "url": "https://i.ytimg.com/vi/5guXTwXssG4/sddefault.jpg"
         },
         "footer": {
             "text": "footer"
         },
         "timestamp": null,
         "url": "",
-        "color": 2272128
+        "reacts": [
+            "\u23ee\ufe0f",
+            "\u23ef\ufe0f",
+            "\u23ed\ufe0f",
+            "\u23f9\ufe0f"
+        ]
     }
 ]
