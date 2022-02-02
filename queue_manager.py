@@ -189,7 +189,7 @@ class ServerManager():
     async def update_player_info(self):
         fields = [self.get_embed_data()]
 
-        self.book.modify_page(1, False, fields = fields, thumbnail = {"url":self.current.thumbnail})
+        self.book.modify_page(1, False, fields = fields, thumbnail = {"url":self.current.thumbnail}, title = {"title":self.current.title}, description = {"description":self.current.duration})
         await self.book.update_page()
 
     def get_embed_data(self):

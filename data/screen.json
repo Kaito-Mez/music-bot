@@ -1,9 +1,9 @@
 [
     {
-        "title": "Music Player",
-        "description": "description",
+        "title": "Nothing!",
+        "description": "0:00",
         "author": {
-            "name": "author"
+            "name": "Now Playing:"
         },
         "fields": [
             {
@@ -20,10 +20,7 @@
             "url": null
         },
         "thumbnail": {
-            "url": "https://i.ytimg.com/vi/Lp0LcjflHwU/sddefault.jpg"
-        },
-        "footer": {
-            "text": "footer"
+            "url": "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fstatic.vecteezy.com%2Fsystem%2Fresources%2Fpreviews%2F000%2F286%2F628%2Foriginal%2Fretro-vintage-cassette-tape-flat-concept-vector-illustration.jpg&f=1&nofb=1"
         },
         "timestamp": null,
         "url": "",
