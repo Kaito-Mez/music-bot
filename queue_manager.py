@@ -412,7 +412,7 @@ class ServerManager():
 
         self.normalize_mp3(path+".mp3")
 
-        return [filename+".mp3", yt.thumbnail_url, yt.title]
+        return [filename+".mp3", yt.thumbnail_url, yt.title, yt.length]
 
     def _download_sc(self, url):
         print("SOUNDCLOUD")
@@ -428,4 +428,4 @@ class ServerManager():
         
         self.normalize_mp3("sound/"+filename)
 
-        return [filename, track.artwork_url, title]
+        return [filename, track.artwork_url, title, track.duration]

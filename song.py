@@ -5,6 +5,7 @@ class Song:
         self.title = searchterm
         self.filename = ""
         self.thumbnail = ""
+        self.duration = 0
         self.is_downloaded = False
         self.downloading = False
     
@@ -14,6 +15,7 @@ class Song:
         self.filename = result[0]
         self.thumbnail = result[1]
         self.title = result[2]
+        self.duration = result[3]
         self.is_downloaded = True
         self.downloading = False
         print(f"Populating: {self.title}, {self.filename}, {self.thumbnail}")
