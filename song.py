@@ -16,9 +16,10 @@ class Song:
         self.thumbnail = result[1]
         self.title = result[2]
         self.duration = result[3]
+        self.duration = f"{int(self.duration / 3600)}:{int((self.duration % 3600) / 60)}:{int(((self.duration % 3600) % 60) / 60)}"
         self.is_downloaded = True
         self.downloading = False
-        print(f"Populating: {self.title}, {self.filename}, {self.thumbnail}")
+        print(f"Populating: {self.title}, {self.filename}, {self.thumbnail}, {self.duration}")
         return
 
     def empty(self):
