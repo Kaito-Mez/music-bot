@@ -279,8 +279,8 @@ class discordBook:
     #returns the index number of whatever react gets clicked
     async def handle_react(self, reaction, responder):
         
-        #only lets the message past if the responder is the author
         def check(responder):
+            #print(reaction.message, self.message)
             return(responder != self.client.user and reaction.message == self.message)
 
         if not check(responder):

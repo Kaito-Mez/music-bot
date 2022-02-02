@@ -9,7 +9,7 @@
             {
                 "name": "Queue:",
                 "inline": true,
-                "value": "***your son looks like a girl***\n"
+                "value": "Type something to add a song"
             }
         ],
         "color": 2272128,
@@ -28,10 +28,12 @@
         "timestamp": null,
         "url": "",
         "reacts": [
-            "\u23ee\ufe0f",
-            "\u23ef\ufe0f",
-            "\u23ed\ufe0f",
-            "\u23f9\ufe0f"
+            "<:ToStart:938243233924915250>",
+            "<:PreviousSong:938243206867456010>",
+            "<:PlayPause:938243011098312774>",
+            "<:NextSong:938243193571512380>",
+            "<:ToEnd:938243222109560833>",
+            "<:EndSession:938245582416400386>"
         ]
     }
 ]

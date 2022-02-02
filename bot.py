@@ -1,8 +1,6 @@
-from asyncio.tasks import sleep
-
-from discord.errors import ClientException
+from discord.errors import ClientException, Forbidden
 from disc_gui import discordBook
-from queue_manager import QueueManager
+from queue_manager import ServerManager
 import discord
 import asyncio
 import time
@@ -10,32 +8,68 @@ import time
 class MusicBot(discord.Client):
 
     def __init__(self):
+        self.servers = []
 
-        self.vc = None
-        self.connected = False
-        self.channel = None
-        self.queue = QueueManager()
-        self.ui = discordBook(self, False, "data/screen.json")
         super().__init__()
 
 
+    async def _setup_guild(self, guild):
 
-    def _is_user_connected(self, member):
-        if member.voice.channel != None:
-            print("is User Connected", True)
-            return True
-        else:
-            print("is User Connected", False)
-            return False
+        channels = await guild.fetch_channels()
+        channel_id = None
+        has_channel = False
+        for channel in channels:
+            if channel.name == "music-test":
+                has_channel = True
+                channel_id = channel.id
+                break
+        if not has_channel:
+            try:
+                channel_id = await guild.create_text_channel(name="music-test", topic="You want to play league of legends 😵😵")
+                channel_id = channel_id.id
+                has_channel = True
+            except Forbidden:
+                print(guild.name, "couldnt create chanenl")
+        
 
-    def _is_same_call(self, member):
-        if member.voice.channel != None and self.connected:
-            print("is User in same call", "Maybe")
-            if member.voice.channel == self.vc.channel:
-                print("is User in same call", True)
-                return True
+        #if bot doesnt have perms to make a channel
+        if has_channel:
+            await client.get_channel(channel_id).purge()
+            book = discordBook(self, False, "data/screen.json")
+            
+            print(f"sending to {guild.name}")
+            await book.send_book(client.get_channel(channel_id))
 
-        print("is User in same call", False)
+            
+            server = ServerManager(guild.id, channel_id, book, self)
+
+            self.servers.append(server)
+
+
+    async def on_guild_join(self, guild):
+        print("Guild Joined ", guild.name)
+        await self._setup_guild(guild)
+
+
+    def on_song_end(self):
+        t = time.time()
+        #for server in self.servers:
+        #   server.pause_audio()
+
+        for server in self.servers:
+            server.download_all()
+
+        t2 = time.time()
+        print(f"Glitch time ~{t2-t}s")
+        
+        #for server in self.servers:
+        #   server.resume_audio()
+
+
+    def get_server_from_message(self, message):
+        for server in self.servers:
+            if message.channel.id == server.channel:
+                return server
         return False
 
     async def on_message(self, message):
@@ -43,128 +77,54 @@ class MusicBot(discord.Client):
         if message.author == client.user:
             return
 
-        def call(f):
-            asyncio.run_coroutine_threadsafe(self.update_player_info(), client.loop)
-        #add new song from message
-        self.queue.add(message.content, call)
-        #result = self.executor.submit(self.download, message.content)
+        server = self.get_server_from_message(message)
+        if server:
+            if message.channel.id == server.get_channel_id():
+                server.add(message.content)
+                await message.delete()
+                if not server.is_playing():
+                    await self.handle_play_pause(server, message.author)
+                
 
-    def handle_after(self):
-        
-        print(f"AFTER {self.queue.current}, {self.queue.list}")
-        if self.queue.advance():
-            print(f"ADVANCE TRUE {self.queue.current}")
-            asyncio.run_coroutine_threadsafe(self.update_player_info(), client.loop)
-            asyncio.run_coroutine_threadsafe(self.play_audio(), client.loop)
-        
-        else:
-            print(f"ADVANCE False {self.queue.current}")
-            asyncio.run_coroutine_threadsafe(self.leave_channel(), client.loop)
+
         
     
-    async def play_audio(self):
 
-        if self.connected:
-            if self.queue.current == None:
-                if self.queue.is_downloading:
-                    while self.queue.is_downloading:
-                        print("awaiting download")
-                        asyncio.sleep(0.5)
-                    self.vc.play(discord.FFmpegPCMAudio(self.queue.get_file()), after = lambda _:self.handle_after())
-            else:
-                print("playing 2")
-                print(f"{self.vc}, {self.queue}, {self.queue.get_file()}")
-                self.vc.stop()
-                self.vc.play(discord.FFmpegPCMAudio(self.queue.get_file()), after = lambda _:self.handle_after())
 
-    async def stop_audio(self):
-        if self.connected:
-            try:
-                self.vc.stop()
-                await self.leave_channel()
-            except discord.errors.ClientException as e:
-                print("stop audio failed", e)
-            finally:
-                time.sleep(1)
-                self.queue.clear()
 
-    async def handle_play_pause(self, member):
 
-        if not self.connected:
-            if self._is_user_connected(member):
-                await self.join_channel(member.voice.channel.id)
+    async def handle_play_pause(self, server, member):
+
+        if not server.vc:
+            if server.is_member_connected(member):
+                await server.join_channel(member.voice.channel.id)
             else:
                 return
 
-        if self.connected:
-            if self._is_same_call(member):
-                if self.vc.is_playing():
-                    await self.pause_audio()
-                elif self.vc.is_paused():
-                    await self.resume_audio()
+        if server.vc:
+            if server.is_member_in_call(member):
+                if server.vc.is_playing():
+                    await server.pause_audio()
+                elif server.vc.is_paused():
+                    await server.resume_audio()
                 else:
-                    await self.play_audio()
+                    await server.play_audio()
 
-    async def resume_audio(self):
-        if self.connected:
-            try:
-                self.vc.resume()
-            except discord.errors.ClientException as e:
-                print("resume audio failed", e)
 
-    async def pause_audio(self):
-        if self.connected:
-            try:
-                self.vc.pause()
-                
-            except discord.errors.ClientException as e:
-                print("pause audio failed", e)
 
-    async def previous_audio(self):
-        if self.connected:
-            try:
-                self.vc.stop()
-                self.queue.previous()
-                await self.play_audio()
-            except discord.errors.ClientException as e:
-                print("prevy", e)
 
-    async def next_audio(self):
-        if self.connected:
-            self.vc.stop()
-            self.handle_after()
 
-    async def join_channel(self, channel):
 
-        try:
-            print(channel)
-            self.vc = await self.get_channel(channel).connect(reconnect = True)
-            self.connected = True
-        except discord.errors.ClientException as e:
-            self.vc = None
-            self.connected = False
-            print(e)
+
+
+
+
     
-    async def leave_channel(self):
-        print("YEAH RIGHT")
-        if self.connected:
-            try:
-                
-                print("Innas")
-                time.sleep(1)
-                self.vc.play(discord.FFmpegPCMAudio("data/sounds/exit.webm"), after= lambda _:asyncio.run_coroutine_threadsafe(self.vc.disconnect(), client.loop))
-                self.connected = False
-            except discord.errors.ClientException as e:
-                print("Leave_channel_broke", e)
+
 
     async def on_ready(self):
-        for channel in self.get_all_channels():
-            if channel.name == "music":
-                self.channel = channel
-                await self.ui.send_book(self.channel)
-
-        #await self.do()
-
+        for guild in client.guilds:
+            await self._setup_guild(guild)
         
         print("Bot Online!")
         print("Name: {}".format(self.user.name))
@@ -172,56 +132,66 @@ class MusicBot(discord.Client):
         print("Version: {}".format(discord.__version__))
         print(discord.opus.is_loaded())
 
+    
+    def _get_server_from_message(self, id):
+        for server in self.servers:
+            if server.get_message_id() == id:
+                return server
+        return False
 
+    #connect ui with bot
     async def on_reaction_add(self, reaction, member):
-        result = await self.ui.handle_react(reaction, member)
+        if client.user == member:
+            return
+
+        id = reaction.message.id
+        server = self._get_server_from_message(id)
+        if server:
+            print("made it")
+            book = server.book
+            result = await book.handle_react(reaction, member)
+            
+        else:
+            result = -1
+
+
         if result == -1:
             return
         
         elif result == 1:
-            await self.previous_audio()
+            await server.to_start()
 
         elif result == 2:
-            await self.handle_play_pause(member)
-        
-        elif result == 3:
-            await self.next_audio()
+            await server.previous_audio()
 
+        elif result == 3:
+            await self.handle_play_pause(server, member)
+        
         elif result == 4:
-            await self.stop_audio()
+            await server.next_audio()
+
+        elif result == 5:
+            await server.to_end()
+            
+        elif result == 6:
+            await server.stop_audio()
 
         print(result)
 
 
-    async def update_player_info(self):
-        fields = [self.get_embed_data()]
-        self.ui.modify_page(1, True, fields = fields, thumbnail = {"url":self.queue.current[1]})
-        await self.ui.update_page()
-
-    def get_embed_data(self):
-        dic = {"name":"Queue:", "inline":True}
-        value = ""
-
-        for index, item in enumerate(self.queue.list):
-            if index == self.queue.index:
-                value += "***"
-            
-            #value += item[0].replace("webm", "").replace("mp3", "").replace("-", " ")
-
-            value += item[2]
-
-            if index == self.queue.index:
-                value += "***"
-            
-            value += "\n"
-
-        dic["value"] = value
-
-        return dic
 
 
+
+
+def get_token():
+    with open("data/DiscordToken.txt", "r") as f:
+        token = f.readline()
+        return token
 
 
 if __name__ == "__main__":
     client = MusicBot()
-    client.run("Mjk4NDE3Mzk5NDY2Njg4NTEz.WOIw3A.1-4w2uZ7Ri3gxjVVzJcXlah2-6E")
+    client.run(get_token())
+
+#Stop Button
+#
