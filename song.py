@@ -17,10 +17,16 @@ class Song:
         self.thumbnail = result[1]
         self.title = result[2]
         self.duration = result[3]
-        if self.duration < 3600:
-            self.duration = f"{int((self.duration % 3600) / 60)}:{int(((self.duration % 3600) % 60) / 60)}"
+        #splits second into hours and minutes and makes self.duration a string in either H/MM/SS, MM/SS, or SS format(eg 8:09:01)
+        if self.duration < 60:
+            #branch for SS format
+            self.duration = f"{(str(int(self.duration % 60))).zill(2)}"
+        elif self.duration < 3600:
+            #branch for MM/SS format
+            self.duration = f"{(str(int(self.duration / 60))).zfill(2)}:{(str(int(self.duration % 60))).zfill(2)}"
         else:
-            self.duration = f"{int(self.duration / 3600)}:{int((self.duration % 3600) / 60)}:{int(((self.duration % 3600) % 60) / 60)}"
+            #branch for H/MM/SS format, would break if 10 hours but I'm assuming you don't allow 10 hour queues anyway 
+            self.duration = f"{(int(self.duration / 3600))}:{(str(int((self.duration % 3600) / 60))).zfill(2)}:{(str(int((self.duration % 60) / 60))).zfill(2)}"
         self.is_downloaded = True
         self.downloading = False
         print(f"Populating: {self.title}, {self.filename}, {self.thumbnail}, {self.duration}")
