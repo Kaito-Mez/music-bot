@@ -8,6 +8,7 @@ class Song:
         self.duration = 0
         self.is_downloaded = False
         self.downloading = False
+        
     
 
     def populate(self, future):

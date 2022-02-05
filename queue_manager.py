@@ -1,3 +1,4 @@
+from concurrent.futures import process
 from django.utils.text import slugify
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -9,7 +10,9 @@ from song import Song
 import discord
 import asyncio
 import time
-import ffmpeg_normalize
+import subprocess
+from subprocess import PIPE
+from io import BytesIO 
 
 class ServerManager():
 
@@ -369,12 +372,18 @@ class ServerManager():
 
 
 
-    def normalize_mp3(self, path):
+    def normalize_stream(self, buffer, path):
         with open("data/volume.txt", "r") as f:
             target_level = int(f.readline())
-        norm = ffmpeg_normalize.FFmpegNormalize(audio_codec="mp3", target_level=target_level)
-        norm.add_media_file(path, path)
-        norm.run_normalization()
+
+        cmd = ["ffmpeg", "-hide_banner", "-i", "pipe:0", "-vn",
+        "-ar", "44100", "-filter:a", f"loudnorm=I={target_level}", "-c:a", "mp3", "-y", f"{path}"]
+
+
+        process = subprocess.Popen(cmd, stdin=PIPE)
+        process.communicate(input=buffer.getvalue())
+        process.wait()
+
 
     def _download_sp(self, url):
         print("SPOTIFY")
@@ -403,14 +412,12 @@ class ServerManager():
 
         print(yt.title)
         filename = slugify(yt.title)
-        filename
-        yt.streams.get_by_itag(251).download("sound", filename+".webm")
+        buffer = BytesIO()
+        yt.streams.get_by_itag(251).stream_to_buffer(buffer)
 
         path = "sound/"+filename
-        os.system(f"ffmpeg -hide_banner -loglevel error -i \"{path}.webm\" -vn -ab 128k -ar 48000 -y \"{path}.mp3\"")
-        os.remove(path+".webm")
 
-        self.normalize_mp3(path+".mp3")
+        self.executor.submit(self.normalize_stream, buffer, path+".mp3")
 
         return [filename+".mp3", yt.thumbnail_url, yt.title, yt.length]
 
@@ -423,9 +430,10 @@ class ServerManager():
         filename += ".mp3"
         title = f'{track.artist} {track.title}'
 
-        with open("sound/" + filename, 'wb+') as fp:
-            track.write_mp3_to(fp)
+        buffer = BytesIO()
+
+        track.write_mp3_to(buffer)
         
-        self.normalize_mp3("sound/"+filename)
+        self.executor.submit(self.normalize_stream, buffer, "sound/"+filename)
 
         return [filename, track.artwork_url, title, track.duration]
