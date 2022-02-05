@@ -33,7 +33,7 @@ yt.streams.get_by_itag(251).stream_to_buffer(buffer)
 
 
 
-filename = "sound/UsingPythonNormalized"
+filename = "data/sounds/start.mp3"
 
 
 
@@ -49,12 +49,15 @@ cmd = ["ffmpeg", "-hide_banner", "-i", "pipe:0",
 
 
 
+cmd = ["ffmpeg", "-hide_banner", "-i", "data/sounds/start.webm", "-vn",
+"-ar", "44100", "-filter:a", f"loudnorm=I=-30", "-c:a", "mp3", "-y", f"{filename}"]
+
 
 
 
 t2 = time.time()
 pipe = subprocess.Popen(cmd, stdin=PIPE)
-pipe.communicate(input=buffer.getvalue())
+#pipe.communicate(input=buffer.getvalue())
 #pipe.wait()
 
 print("TIME = ", t2-t1)

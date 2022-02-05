@@ -49,7 +49,7 @@ class ServerManager():
             try:
                 print("Innas")
                 await asyncio.sleep(5)
-                self.vc.play(discord.FFmpegPCMAudio("data/sounds/exit.webm"), after= lambda _:asyncio.run_coroutine_threadsafe(self.vc.disconnect(), self.client.loop))
+                self.vc.play(discord.FFmpegPCMAudio("data/sounds/exit.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.vc.disconnect(), self.client.loop))
                 await asyncio.sleep(3)
             except discord.errors.ClientException as e:
                 print("Leave_channel_broke", e)
@@ -62,7 +62,7 @@ class ServerManager():
                     await asyncio.sleep(0.5)
                     print("awaiting download")
                 await self.update_player_info()
-                self.vc.play(discord.FFmpegPCMAudio("data/sounds/start.webm"), after= lambda _:self.vc.play(discord.FFmpegPCMAudio(self.get_file()), after = lambda _:self.handle_after()))
+                self.vc.play(discord.FFmpegPCMAudio("data/sounds/start.mp3"), after= lambda _:self.vc.play(discord.FFmpegPCMAudio(self.get_file()), after = lambda _:self.handle_after()))
             
 
 
@@ -166,7 +166,7 @@ class ServerManager():
                     print(f"ADVANCE TRUE {self.current}")
             
         self.disengage = False
-        self.vc.play(discord.FFmpegPCMAudio("data/sounds/end.webm"), after= lambda _:asyncio.run_coroutine_threadsafe(self.play_audio(), self.client.loop))
+        self.vc.play(discord.FFmpegPCMAudio("data/sounds/end.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.play_audio(), self.client.loop))
 
 
 
