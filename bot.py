@@ -81,6 +81,7 @@ class MusicBot(discord.Client):
         if server:
             if message.channel.id == server.get_channel_id():
                 server.add(message.content)
+                await asyncio.sleep(0.5)
                 await message.delete()
                 if not server.is_playing():
                     await self.handle_play_pause(server, message.author)

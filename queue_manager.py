@@ -179,7 +179,7 @@ class ServerManager():
         return False
 
     def is_member_connected(self, member):
-        if member.voice.channel != None:
+        if member.voice:
             if member.voice.channel in self.client.get_guild(self.id).voice_channels:
                 return True
         return False
