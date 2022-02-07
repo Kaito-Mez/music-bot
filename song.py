@@ -6,6 +6,7 @@ class Song:
         self.title = searchterm
         self.filename = ""
         self.thumbnail = ""
+        self.url = ""
         self.duration = 0
         self.is_downloaded = False
         self.downloading = False
@@ -14,10 +15,11 @@ class Song:
 
     def populate(self, future):
         result = future.result()
-        self.filename = result[0]
-        self.thumbnail = result[1]
-        self.title = result[2]
-        self.duration = result[3]
+        self.filename = result["filename"]
+        self.thumbnail = result["thumbnail"]
+        self.title = result["title"]
+        self.duration = result["duration"]
+        self.url = result["url"]
 
         self.duration = str(datetime.timedelta(seconds=self.duration))
         #brokey

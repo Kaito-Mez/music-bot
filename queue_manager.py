@@ -184,7 +184,12 @@ class ServerManager():
                 return True
         return False
 
+    def is_bot_alone(self):
+        if self.vc:
+            if len(self.vc.channel.members) == 1:
+                return True
 
+        return False
 
 
 
@@ -192,7 +197,9 @@ class ServerManager():
     async def update_player_info(self):
         fields = [self.get_embed_data()]
 
-        self.book.modify_page(1, False, fields = fields, thumbnail = {"url":self.current.thumbnail}, title = self.current.title, description = self.current.duration)
+        self.book.modify_page(1, False, fields = fields, thumbnail = {"url":self.current.thumbnail}, 
+                                title = self.current.title, url=self.current.url,
+                                description = self.current.duration)
         await self.book.update_page()
 
     def get_embed_data(self):
@@ -203,6 +210,8 @@ class ServerManager():
             if song == self.current:
                 value += "***"
 
+            value += str(self.queue.index(song)+1)
+            value += " "
             value += song.title
 
             if song == self.current:
@@ -418,8 +427,8 @@ class ServerManager():
         path = "sound/"+filename
 
         self.executor.submit(self.normalize_stream, buffer, path+".mp3")
-
-        return [filename+".mp3", yt.thumbnail_url, yt.title, yt.length]
+        return {"filename":filename+".mp3", "thumbnail":yt.thumbnail_url, 
+            "title":yt.title, "duration":yt.length, "url":yt.watch_url}
 
     def _download_sc(self, url):
         print("SOUNDCLOUD")
@@ -429,11 +438,11 @@ class ServerManager():
         filename = slugify(filename)
         filename += ".mp3"
         title = f'{track.artist} {track.title}'
-
         buffer = BytesIO()
 
         track.write_mp3_to(buffer)
         
         self.executor.submit(self.normalize_stream, buffer, "sound/"+filename)
 
-        return [filename, track.artwork_url, title, track.duration]
+        return {"filename":filename, "thumbnail":track.artwork_url, 
+            "title":title, "duration":track.duration, "url":track.permalink_url}

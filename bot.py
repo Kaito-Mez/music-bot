@@ -1,3 +1,4 @@
+from email import message
 from discord.errors import ClientException, Forbidden
 from disc_gui import discordBook
 from queue_manager import ServerManager
@@ -65,6 +66,11 @@ class MusicBot(discord.Client):
         #for server in self.servers:
         #   server.resume_audio()
 
+    def get_server_from_id(self, id):
+        for server in self.servers:
+            if server.id == id:
+                return server
+        return False
 
     def get_server_from_message(self, message):
         for server in self.servers:
@@ -134,19 +140,13 @@ class MusicBot(discord.Client):
         print(discord.opus.is_loaded())
 
     
-    def _get_server_from_message(self, id):
-        for server in self.servers:
-            if server.get_message_id() == id:
-                return server
-        return False
-
     #connect ui with bot
     async def on_reaction_add(self, reaction, member):
         if client.user == member:
             return
 
-        id = reaction.message.id
-        server = self._get_server_from_message(id)
+        msg = reaction.message
+        server = self.get_server_from_message(msg)
         if server:
             print("made it")
             book = server.book
@@ -180,6 +180,12 @@ class MusicBot(discord.Client):
         print(result)
 
 
+    async def on_voice_state_update(self, member, before, after):
+        if before.channel:
+            server = self.get_server_from_id(before.channel.guild.id)
+            if server:
+                if server.is_bot_alone():
+                    await server.stop_audio()
 
 
 
