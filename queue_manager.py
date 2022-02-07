@@ -209,9 +209,9 @@ class ServerManager():
         for song in self.queue:
             if song == self.current:
                 value += "***"
-
+             
             value += str(self.queue.index(song)+1)
-            value += " "
+            value += ". "
             value += song.title
 
             if song == self.current:
