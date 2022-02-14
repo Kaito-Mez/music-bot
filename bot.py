@@ -19,14 +19,17 @@ class MusicBot(discord.Client):
         channels = await guild.fetch_channels()
         channel_id = None
         has_channel = False
+
+        name = "8-track-fm"
+        topic = "<:8TrackFM:941526015602225192> Join a call and send messages or links in this channel to queue music. Supported platforms: Youtube, Spotify (Link Only), Souncloud (Link Only)"
         for channel in channels:
-            if channel.name == "music-test":
+            if channel.name == name:
                 has_channel = True
                 channel_id = channel.id
                 break
         if not has_channel:
             try:
-                channel_id = await guild.create_text_channel(name="music-test", topic="You want to play league of legends 😵😵")
+                channel_id = await guild.create_text_channel(name=name, topic=topic)
                 channel_id = channel_id.id
                 has_channel = True
             except Forbidden:
@@ -70,7 +73,7 @@ class MusicBot(discord.Client):
         for server in self.servers:
             if server.id == id:
                 return server
-        return False
+        return None
 
     def get_server_from_message(self, message):
         for server in self.servers:
@@ -80,17 +83,27 @@ class MusicBot(discord.Client):
 
     async def on_message(self, message):
         
+
+        async def add_song(server, message):
+            server.add(message.content, message.author)
+            if not server.is_playing():
+                await self.handle_play_pause(server, message.author)
+
         if message.author == client.user:
             return
 
         server = self.get_server_from_message(message)
         if server:
             if message.channel.id == server.get_channel_id():
-                server.add(message.content)
                 await asyncio.sleep(0.5)
                 await message.delete()
-                if not server.is_playing():
-                    await self.handle_play_pause(server, message.author)
+                if server.vc:
+                    if server.is_member_in_call(message.author):
+                        await add_song(server, message)
+
+                else:
+                    if server.is_member_connected(message.author):
+                        await add_song(server, message)
                 
 
 
@@ -110,16 +123,12 @@ class MusicBot(discord.Client):
 
         if server.vc:
             if server.is_member_in_call(member):
-                if server.vc.is_playing():
+                if server.is_playing():
                     await server.pause_audio()
-                elif server.vc.is_paused():
+                elif server.is_paused():
                     await server.resume_audio()
                 else:
                     await server.play_audio()
-
-
-
-
 
 
 
@@ -148,7 +157,6 @@ class MusicBot(discord.Client):
         msg = reaction.message
         server = self.get_server_from_message(msg)
         if server:
-            print("made it")
             book = server.book
             result = await book.handle_react(reaction, member)
             
@@ -175,9 +183,12 @@ class MusicBot(discord.Client):
             await server.to_end()
             
         elif result == 6:
+            server.remove_song(server.current)
+
+        elif result == 7:
             await server.stop_audio()
 
-        print(result)
+        print("React result ", result)
 
 
     async def on_voice_state_update(self, member, before, after):

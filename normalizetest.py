@@ -16,7 +16,7 @@ client_id=_get_soundcloud_auth()
 
 soundcloud = SoundcloudAPI()
 
-track = soundcloud.resolve('https://soundcloud.com/itsrestricted-second/bing-bong-x-tokyo-drift-x-temperature-restricted-edit')
+track = soundcloud.resolve('https://soundcloud.com/monstercat/unlike-pluto-everything-black')
 
 
 search = pytube.Search("cyber grind")
@@ -28,12 +28,12 @@ yt = pytube.YouTube(url)
 t1 = time.time()
 
 buffer = BytesIO()
-yt.streams.get_by_itag(251).stream_to_buffer(buffer)
-#track.write_mp3_to(buffer)
+#yt.streams.get_by_itag(251).stream_to_buffer(buffer)
+track.write_mp3_to(buffer)
 
 
 
-filename = "data/sounds/start.mp3"
+filename = "data/sounds/test.mp3"
 
 
 
@@ -49,7 +49,7 @@ cmd = ["ffmpeg", "-hide_banner", "-i", "pipe:0",
 
 
 
-cmd = ["ffmpeg", "-hide_banner", "-i", "data/sounds/start.webm", "-vn",
+cmd = ["ffmpeg", "-hide_banner", "-i", "pipe:0", "-vn",
 "-ar", "44100", "-filter:a", f"loudnorm=I=-30", "-c:a", "mp3", "-y", f"{filename}"]
 
 
@@ -57,7 +57,7 @@ cmd = ["ffmpeg", "-hide_banner", "-i", "data/sounds/start.webm", "-vn",
 
 t2 = time.time()
 pipe = subprocess.Popen(cmd, stdin=PIPE)
-#pipe.communicate(input=buffer.getvalue())
+pipe.communicate(input=buffer.getvalue())
 #pipe.wait()
 
 print("TIME = ", t2-t1)

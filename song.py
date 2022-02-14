@@ -1,15 +1,22 @@
 import os
 import datetime
+import time
 
 class Song:
-    def __init__(self, searchterm) -> None:
+    def __init__(self, searchterm, requestor) -> None:
         self.title = searchterm
+        if requestor.nick:
+            self.requestor_name = requestor.nick
+        else:
+            self.requestor_name = requestor.name
+        self.requestor_avatar = str(requestor.avatar_url)
         self.filename = ""
         self.thumbnail = ""
         self.url = ""
         self.duration = 0
         self.is_downloaded = False
         self.downloading = False
+        self.is_cancelled = False
 
     
 
@@ -41,12 +48,13 @@ class Song:
         return
 
     def empty(self):
-        try:
-            os.remove(self.get_filepath())
-        except OSError:
-            print("Couldnt be deleted")
-            
-        self.__init__(self.title)
+        self.is_cancelled = True
+        while os.path.isfile(self.get_filepath()):
+            try:
+                os.remove(self.get_filepath())
+            except OSError:
+                print("Couldnt be deleted")
+                time.sleep(0.2)
 
     def get_filepath(self) -> str:
         if self.is_downloaded:

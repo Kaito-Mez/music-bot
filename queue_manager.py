@@ -1,4 +1,5 @@
 from concurrent.futures import process
+from operator import index
 from django.utils.text import slugify
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -11,21 +12,22 @@ import discord
 import asyncio
 import time
 import subprocess
-from subprocess import PIPE
+from subprocess import PIPE, TimeoutExpired
 from io import BytesIO 
 
 class ServerManager():
 
     def __init__(self, id, channel, book, client):
+        self.closing = False
         self.disengage = False
         self.rewind = False
         self.current = None
         self.queue = []
         self.index = 0
-        self.executor = ThreadPoolExecutor()
+        self.executor = ThreadPoolExecutor(thread_name_prefix="ServerManagerExecutor")
         auth = self._get_spotify_auth()
         self.spotify = Spotify(auth_manager=SpotifyClientCredentials(client_id=auth[0], client_secret=auth[1]))
-        self.soundcloud = SoundcloudAPI(client_id=self._get_soundcloud_auth())
+        self.soundcloud = SoundcloudAPI()
 
         
         self.channel = channel
@@ -37,19 +39,22 @@ class ServerManager():
     async def join_channel(self, channel):
 
         try:
-            print(channel)
             self.vc = await self.client.get_channel(channel).connect(reconnect = True)
         except discord.errors.ClientException as e:
             self.vc = None
             self.connected = False
             print(e)
 
+    async def disconnect(self):
+        if self.vc:
+            await self.vc.disconnect()
+            self.vc = None
+
     async def leave_channel(self):
         if self.vc:
             try:
-                print("Innas")
-                await asyncio.sleep(5)
-                self.vc.play(discord.FFmpegPCMAudio("data/sounds/exit.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.vc.disconnect(), self.client.loop))
+                await asyncio.sleep(2)
+                self.vc.play(discord.FFmpegPCMAudio("data/sounds/exit.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.disconnect(), self.client.loop))
                 await asyncio.sleep(3)
             except discord.errors.ClientException as e:
                 print("Leave_channel_broke", e)
@@ -57,26 +62,29 @@ class ServerManager():
     async def play_audio(self):
 
         if self.vc:
+            self.vc.stop()
             if self.current:
+                print("awaiting download")
                 while self.current.is_downloaded == False:
                     await asyncio.sleep(0.5)
-                    print("awaiting download")
-                await self.update_player_info()
-                self.vc.play(discord.FFmpegPCMAudio("data/sounds/start.mp3"), after= lambda _:self.vc.play(discord.FFmpegPCMAudio(self.get_file()), after = lambda _:self.handle_after()))
-            
+                try:
+                    self.vc.play(discord.FFmpegPCMAudio("data/sounds/start.mp3"), after= lambda _:self.vc.play(discord.FFmpegPCMAudio(self.get_file()), after = lambda _:self.handle_after()))
+                except discord.errors.ClientException as e:
+                    pass
 
 
     async def stop_audio(self):
         if self.vc:
             try:
+                self.closing = True
                 self.vc.stop()
                 await self.leave_channel()
-                self.vc = None
             except discord.errors.ClientException as e:
                 print("stop audio failed", e)
             finally:
                 await asyncio.sleep(1)
                 self.clear()
+                await self.reset_player_info()
 
     async def resume_audio(self):
         if self.vc:
@@ -116,22 +124,32 @@ class ServerManager():
     async def to_start(self):
         if self.vc:
             self.disengage = True
-            if self.is_paused or self.is_playing():
+
+            if len(self.queue) > 0:
+                self.index = 0
+                self.current = self.queue[self.index]
+                
+                asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
+                
+            if self.is_paused() or self.is_playing():
                 try:
                     self.vc.stop()
                 except discord.errors.ClientException as e:
                     print("start ", e)
-            
             else:
                 self.handle_after()
-            if len(self.queue) > 0:
-                self.index = 0
-                self.current = self.queue[self.index]
 
     async def to_end(self):
         if self.vc:
             self.disengage = True
-            if self.is_paused or self.is_playing():
+
+            if len(self.queue) > 0:
+                self.index = len(self.queue) - 1
+                self.current = self.queue[self.index]
+                
+                asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
+
+            if self.is_paused() or self.is_playing():
                 try:
                     self.vc.stop()
                 except discord.errors.ClientException as e:
@@ -139,9 +157,6 @@ class ServerManager():
             else:
                 self.handle_after()
 
-            if len(self.queue) > 0:
-                self.index = len(self.queue) - 1
-                self.current = self.queue[self.index]
 
     def is_playing(self):
         if self.vc:
@@ -154,25 +169,24 @@ class ServerManager():
             return self.vc.is_paused()
 
     def handle_after(self):
-        
-        self.client.on_song_end()
-        if not self.disengage:
-            if self.rewind:
-                self.previous()
-                self.rewind = False
+        if not self.closing:
+            self.client.on_song_end()
+            if not self.disengage:
+                if self.rewind:
+                    self.previous()
+                    self.rewind = False
 
-            else:
-                if self.advance():
-                    print(f"ADVANCE TRUE {self.current}")
-            
-        self.disengage = False
-        self.vc.play(discord.FFmpegPCMAudio("data/sounds/end.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.play_audio(), self.client.loop))
-
+                else:
+                    self.advance()
+                
+            self.disengage = False
+            self.vc.play(discord.FFmpegPCMAudio("data/sounds/end.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.play_audio(), self.client.loop))
+        self.closing = False
 
 
 
     def is_member_in_call(self, member):
-        if member.voice.channel != None and self.vc:
+        if member.voice and self.vc:
             if member.voice.channel == self.vc.channel:
                 return True
 
@@ -186,41 +200,81 @@ class ServerManager():
 
     def is_bot_alone(self):
         if self.vc:
-            if len(self.vc.channel.members) == 1:
+            if len(self.vc.channel.voice_states) == 1:
+                
+                print("BOT IS ALONE ")
                 return True
 
         return False
 
 
-
+    async def reset_player_info(self, update=True):
+        self.book.remove_page(1)
+        self.book.pages_from_json("data/screen.json")
+        if update:
+            await self.book.update_page()
 
     async def update_player_info(self):
+        queue_vis = []
+        for i in self.queue:
+            queue_vis.append(i.title)
+        print("UPDATE CALLED", queue_vis)
         fields = [self.get_embed_data()]
-
-        self.book.modify_page(1, False, fields = fields, thumbnail = {"url":self.current.thumbnail}, 
+        if self.current:
+            print("AVATAR", self.current.requestor_avatar)
+            self.book.modify_page(1, False, fields = fields, thumbnail = {"url":self.current.thumbnail}, 
                                 title = self.current.title, url=self.current.url,
-                                description = self.current.duration)
+                                description = self.current.duration, 
+                                footer = {"text":self.current.requestor_name, "icon_url": self.current.requestor_avatar})
+        else:
+            await self.reset_player_info(False)
+            self.book.modify_page(1, False, fields = fields)
         await self.book.update_page()
 
-    def get_embed_data(self):
+    def get_embed_data(self):    
+
+
+        def display_song(test_index, current_index, num_to_display, queue_length):
+            cutoff = int(num_to_display/2)
+
+            if current_index < cutoff:
+                if test_index < num_to_display:
+                    return True
+                return False
+
+            elif current_index >= queue_length-cutoff:
+                if test_index >= queue_length-num_to_display:
+                    return True
+                return False
+            
+            else:
+                if test_index > current_index - cutoff and test_index <= current_index + cutoff:
+                    return True
+                return False
+
+
+
         dic = {"name":"Queue:", "inline":True}
         value = ""
+        num = 10
+        length = len(self.queue)
 
         for song in self.queue:
-            if song == self.current:
-                value += "***"
-             
-            value += str(self.queue.index(song)+1)
-            value += ". "
-            value += song.title
+            test_ind = self.queue.index(song)
+            if display_song(test_ind, self.index, num, length):
+                if song == self.current:
+                    value += "***"
+                
+                value += str(self.queue.index(song)+1)
+                value += ". "
+                value += song.title
 
-            if song == self.current:
-                value += "***"
-            
-            value += "\n"
+                if song == self.current:
+                    value += "***"
+                
+                value += "\n"
 
         dic["value"] = value
-
         return dic
 
 
@@ -231,9 +285,29 @@ class ServerManager():
 
 
 
+    def remove_song(self, song):
+        self.index -= 1
+        song.is_cancelled = True
 
+        self.queue.remove(song)
 
+        if song == self.current:
+            self.current = None
 
+        self.vc.stop()
+        path = song.get_filepath()
+        if path:
+            while os.path.isfile(path):
+                try:
+                    os.remove(song.get_filepath())
+                except OSError as e:
+                    pass
+                time.sleep(0.1)
+
+        if len(self.queue) == 0:
+            asyncio.run_coroutine_threadsafe(self.reset_player_info(), self.client.loop)
+        else:
+            asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
 
 
 
@@ -282,20 +356,11 @@ class ServerManager():
     def download_all(self):
         for song in self.get_downloads():
             song.downloading = True
-            future = self.executor.submit(self._download, song.title)
+            future = self.executor.submit(self._download, song.title, song)
             future.add_done_callback(song.populate)
 
-
-    
-    def _on_download(self, future):
-        print("Second")
-        self.queue.append(future.result())
-        if len(self.queue) == 1:
-            self.current = self.queue[0]
-
-
-    def add(self, searchterm:str):
-        song = Song(searchterm)
+    def add(self, searchterm:str, requestor):
+        song = Song(searchterm, requestor)
         self.queue.append(song)
         if self.current == None:
             self.current = song
@@ -305,10 +370,10 @@ class ServerManager():
         asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
 
     def clear(self):
-        print("triggered")
         for song in self.queue:
             song.empty()
-            self.queue.remove(song)
+
+        self.queue = []
             
         self.__init__(self.id, self.channel, self.book, self.client)
         
@@ -336,14 +401,14 @@ class ServerManager():
             return False
 
         else:
-            print("INDEX BEFORE INCREMENT " + str(self.index))
             self.index += 1
             self.current = self.queue[self.index]
             asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
             return True
 
     def get_file(self):
-        return f"sound/{self.current.filename}"
+        if self.current:
+            return f"sound/{self.current.filename}"
 
     
 
@@ -357,17 +422,16 @@ class ServerManager():
 
 
 
-    def _download(self, searchterm):
-        print(searchterm)
+    def _download(self, searchterm, song):
         data = []
         if "spotify.com" in searchterm:
-            data = self._download_sp(searchterm)
+            data = self._download_sp(searchterm, song)
 
         elif "soundcloud.com" in searchterm:
-            data = self._download_sc(searchterm)
+            data = self._download_sc(searchterm, song)
         
         else:
-            data = self._download_yt(searchterm)
+            data = self._download_yt(searchterm, song)
 
         asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
 
@@ -375,26 +439,48 @@ class ServerManager():
 
         
 
+    def remove_song_duplicates(self, filename):
+        count = 1
+        indexes = []
+        for i, song in enumerate(self.queue):
+            if song.filename == filename:
+                count += 1
+                indexes.append(i)        
+
+        if count > 1:
+            indexes.reverse()
+            for j in indexes:
+                self.queue.pop(j)
+
+    def process_normalize(self, process, input):
+        process.communicate(input=input)
+
+    def normalize_stream(self, buffer, path, song):
 
 
-
-
-
-
-    def normalize_stream(self, buffer, path):
         with open("data/volume.txt", "r") as f:
             target_level = int(f.readline())
 
-        cmd = ["ffmpeg", "-hide_banner", "-i", "pipe:0", "-vn",
+        cmd = ["ffmpeg", "-hide_banner", "-loglevel", "warning", "-i", "pipe:0", "-vn",
         "-ar", "44100", "-filter:a", f"loudnorm=I={target_level}", "-c:a", "mp3", "-y", f"{path}"]
 
-
         process = subprocess.Popen(cmd, stdin=PIPE)
-        process.communicate(input=buffer.getvalue())
-        process.wait()
+        #os.close(process.stdout)
+        self.executor.submit(self.process_normalize, process, buffer.getvalue())
+        while process.poll() is None:
+            if not song.is_cancelled:
+                time.sleep(1)
+            else:
+                print("CANCELLED")
+                process.terminate()
+                print("removing", song.title)
+                os.remove(path)
+        
+        print("finished processing")
+        
 
 
-    def _download_sp(self, url):
+    def _download_sp(self, url, song):
         print("SPOTIFY")
         searchterm = ""
         track = self.spotify.track(url)
@@ -403,46 +489,68 @@ class ServerManager():
             searchterm += " "
             searchterm += i["name"]
 
-        return self._download_yt(searchterm)
+        return self._download_yt(searchterm, song)
         
 
-    def _download_yt(self, searchterm):
+    def _download_yt(self, searchterm, song):
         print("YOUTUBE")
-        print(f"SEARCHTERM:{searchterm}")
         if "https://www.youtube.com/watch?v=" in searchterm or "https://youtu.be/" in searchterm:
             yt = pytube.YouTube(searchterm)
         
         else:
             search = pytube.Search(searchterm)
             url = search.results[0].watch_url
-            print(f"URL: {url}")
             yt = pytube.YouTube(url)
 
-
-        print(yt.title)
-        filename = slugify(yt.title)
-        buffer = BytesIO()
-        yt.streams.get_by_itag(251).stream_to_buffer(buffer)
-
+        filename = slugify(yt.title)+".mp3"
         path = "sound/"+filename
+        buffer = BytesIO()
+        
+        if yt.length > 10800:
+            self.remove_song(song)
 
-        self.executor.submit(self.normalize_stream, buffer, path+".mp3")
-        return {"filename":filename+".mp3", "thumbnail":yt.thumbnail_url, 
+        if not os.path.isfile(path):
+            print("File not found")
+            if not song.is_cancelled:
+                print("streaming to buffer")
+                itags = [251, 140, 139]
+                stream = None
+                for i in itags:
+                    if not stream:
+                        stream = yt.streams.get_by_itag(i)
+                    else:
+                        break
+
+                stream.stream_to_buffer(buffer)
+            if not song.is_cancelled:
+                print("normalizing audio")
+                self.executor.submit(self.normalize_stream, buffer, path, song)
+
+        else:
+            self.remove_song_duplicates(filename)
+
+        return {"filename":filename, "thumbnail":yt.thumbnail_url, 
             "title":yt.title, "duration":yt.length, "url":yt.watch_url}
 
-    def _download_sc(self, url):
-        print("SOUNDCLOUD")
+    def _download_sc(self, url, song):
         track = self.soundcloud.resolve(url)
 
         filename = f'{track.artist} {track.title}'
         filename = slugify(filename)
         filename += ".mp3"
         title = f'{track.artist} {track.title}'
-        buffer = BytesIO()
 
-        track.write_mp3_to(buffer)
-        
-        self.executor.submit(self.normalize_stream, buffer, "sound/"+filename)
+        buffer = BytesIO()
+        path = "sound/"+filename
+        if track.duration > 10800:
+            self.remove_song(song)
+        if not os.path.isfile(path):
+            if not song.is_cancelled:
+                track.write_mp3_to(buffer)
+            if not song.is_cancelled:
+                self.executor.submit(self.normalize_stream, buffer, path, song)
+        else:
+            self.remove_song_duplicates(filename)
 
         return {"filename":filename, "thumbnail":track.artwork_url, 
             "title":title, "duration":track.duration, "url":track.permalink_url}

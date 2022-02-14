@@ -101,7 +101,6 @@ class discordBook:
                 modded_page[key] = []
                 for item in kwargs.get(key, None):
                     modded_page[key].append(item)
-
                     #modded_page[key][kwargs.get(key, None).index(item)].update(item)
             else:
                 modded_page.update({key:kwargs.get(key, modded_page[key])})
@@ -152,7 +151,6 @@ class discordBook:
     async def send_book(self, channel):
         #fix this to ask for perms to delete other persons book
         if self.message != None:
-            print('running this')
             await self.unsend_book()
 
         self.message = await channel.send(embed = Embed.from_dict(self.pages[1]))
@@ -286,26 +284,24 @@ class discordBook:
         if not check(responder):
             return -1
             
+
         print('responder is {}'.format(responder))
 
         user = responder
 
+        try:
+            await self.message.remove_reaction(reaction, user)
+        except discord.Forbidden:
+            print('couldnt remove emote')
+            
         #handles response after receiving it
         if self.use_preset_reacts == True:
             if str(reaction) in self.preset_reacts:
                 
                 if str(reaction.emoji) == '⬅':
-                    try:
-                        await self.message.remove_reaction(reaction, user)
-                    except discord.Forbidden:
-                        print('couldnt remove emote')
                     await self.cycle_page('prev')
 
                 elif str(reaction) == '➡':
-                    try:
-                        await self.message.remove_reaction(reaction, user)
-                    except discord.Forbidden:
-                        print('couldnt remove emote')
                     await self.cycle_page('next')
                     
                 elif str(reaction) == '🗑':
@@ -316,10 +312,6 @@ class discordBook:
 
         #returns a value based on index of the emote in the relevant emote list
         if str(reaction) in self.reacts[self.current_page]:
-            try:
-                await self.message.remove_reaction(reaction, user)
-            except discord.Forbidden:
-                print('couldnt remove emote')
 
             #makes it so the 1st emote in the list returns 1 as 0 is reserved for deleting the page
             index = self.reacts[self.current_page].index(str(reaction))

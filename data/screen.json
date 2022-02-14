@@ -9,7 +9,7 @@
             {
                 "name": "Queue:",
                 "inline": true,
-                "value": "Type something to add a song"
+                "value": "Send a message to queue a song"
             }
         ],
         "color": 16767920,
@@ -30,6 +30,7 @@
             "<:PlayPause:939694676515094578>",
             "<:NextSong:939694676632555560>",
             "<:ToEnd:939694676628369408>",
+            "<:RemoveSong:941539112811393055>",
             "<:EndSession:939694676229894145>"
         ],
         "footer":{"text":""}
