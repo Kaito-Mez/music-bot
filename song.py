@@ -49,12 +49,13 @@ class Song:
 
     def empty(self):
         self.is_cancelled = True
-        while os.path.isfile(self.get_filepath()):
-            try:
-                os.remove(self.get_filepath())
-            except OSError:
-                print("Couldnt be deleted")
-                time.sleep(0.2)
+        if self.get_filepath():
+            while os.path.isfile(self.get_filepath()):
+                try:
+                    os.remove(self.get_filepath())
+                except OSError:
+                    print("Couldnt be deleted")
+                    time.sleep(0.2)
 
     def get_filepath(self) -> str:
         if self.is_downloaded:

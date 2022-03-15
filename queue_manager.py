@@ -1,5 +1,6 @@
 from concurrent.futures import process
 from operator import index
+import queue
 from django.utils.text import slugify
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -14,6 +15,7 @@ import time
 import subprocess
 from subprocess import PIPE, TimeoutExpired
 from io import BytesIO 
+from random import shuffle
 
 class ServerManager():
 
@@ -170,7 +172,6 @@ class ServerManager():
 
     def handle_after(self):
         if not self.closing:
-            self.client.on_song_end()
             if not self.disengage:
                 if self.rewind:
                     self.previous()
@@ -179,6 +180,7 @@ class ServerManager():
                 else:
                     self.advance()
                 
+            self.client.on_song_end()
             self.disengage = False
             self.vc.play(discord.FFmpegPCMAudio("data/sounds/end.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.play_audio(), self.client.loop))
         self.closing = False
@@ -231,37 +233,37 @@ class ServerManager():
             self.book.modify_page(1, False, fields = fields)
         await self.book.update_page()
 
-    def get_embed_data(self):    
+    def display_song(self, test_index, num_to_display):
+
+        queue_length = len(self.queue)
+        current_index = self.index
+
+        cutoff = int(num_to_display/2)
 
 
-        def display_song(test_index, current_index, num_to_display, queue_length):
-            cutoff = int(num_to_display/2)
+        if current_index < cutoff:
+            if test_index < num_to_display:
+                return True
+            return False
 
-            if current_index < cutoff:
-                if test_index < num_to_display:
-                    return True
-                return False
-
-            elif current_index >= queue_length-cutoff:
-                if test_index >= queue_length-num_to_display:
-                    return True
-                return False
+        elif current_index >= queue_length-cutoff:
+            if test_index >= queue_length-num_to_display:
+                return True
+            return False
+        
+        else:
+            if test_index > current_index - cutoff and test_index <= current_index + cutoff:
+                return True
+            return False
             
-            else:
-                if test_index > current_index - cutoff and test_index <= current_index + cutoff:
-                    return True
-                return False
-
-
-
+    def get_embed_data(self):
         dic = {"name":"Queue:", "inline":True}
         value = ""
         num = 10
-        length = len(self.queue)
 
         for song in self.queue:
             test_ind = self.queue.index(song)
-            if display_song(test_ind, self.index, num, length):
+            if self.display_song(test_ind, num):
                 if song == self.current:
                     value += "***"
                 
@@ -293,6 +295,7 @@ class ServerManager():
 
         if song == self.current:
             self.current = None
+            self.disengage = True
 
         self.vc.stop()
         path = song.get_filepath()
@@ -333,11 +336,13 @@ class ServerManager():
         return data
 
 
-    def get_downloads(self):
+    def get_downloads(self, max_num):
         l = []
-        for song in self.queue:
+
+        for index, song in enumerate(self.queue):
             if not song.is_downloaded and not song.downloading:
-                l.append(song)
+                if self.display_song(index, max_num):
+                    l.append(song)
         return l
 
 
@@ -354,18 +359,39 @@ class ServerManager():
         return message_id == self.get_message_id()
 
     def download_all(self):
-        for song in self.get_downloads():
+        for song in self.get_downloads(10):
             song.downloading = True
             future = self.executor.submit(self._download, song.title, song)
             future.add_done_callback(song.populate)
 
     def add(self, searchterm:str, requestor):
-        song = Song(searchterm, requestor)
-        self.queue.append(song)
-        if self.current == None:
-            self.current = song
-            self.index = len(self.queue) - 1
-            self.client.on_song_end()
+        if "open.spotify.com/playlist/" in searchterm:
+            playlist = self.spotify.playlist(searchterm)
+            songs = playlist['tracks']['items']
+            searchterms = []
+            for songdata in songs:
+                searchterms.append(songdata["track"]["external_urls"]["spotify"])
+
+            shuffle(searchterms)
+
+            for term in searchterms:
+                song = Song(term, requestor)
+                self.queue.append(song)        
+
+                if self.current == None:
+                    self.current = song
+                    self.index = len(self.queue) - 1
+                    self.client.on_song_end()
+
+        else:    
+            song = Song(searchterm, requestor)
+
+            self.queue.append(song)
+
+            if self.current == None:
+                self.current = song
+                self.index = len(self.queue) - 1
+                self.client.on_song_end()
 
         asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
 
@@ -394,11 +420,18 @@ class ServerManager():
         return True
 
     def advance(self):
-        if self.index >= len(self.queue) - 1 or len(self.queue) == 0:
+        loop = True
+        if len(self.queue) == 0:
             self.index = len(self.queue) 
             self.current = None
             asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
             return False
+
+        elif self.index >= len(self.queue) - 1:
+            self.index = 0
+            self.current = self.queue[self.index]
+            asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
+            return True
 
         else:
             self.index += 1
@@ -495,12 +528,12 @@ class ServerManager():
     def _download_yt(self, searchterm, song):
         print("YOUTUBE")
         if "https://www.youtube.com/watch?v=" in searchterm or "https://youtu.be/" in searchterm:
-            yt = pytube.YouTube(searchterm)
+            yt = pytube.YouTube(searchterm, use_oauth=True)
         
         else:
             search = pytube.Search(searchterm)
             url = search.results[0].watch_url
-            yt = pytube.YouTube(url)
+            yt = pytube.YouTube(url, use_oauth=True)
 
         filename = slugify(yt.title)+".mp3"
         path = "sound/"+filename

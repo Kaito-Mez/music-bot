@@ -25,10 +25,12 @@ for i in sp.track("https://open.spotify.com/track/40QjbtQ2GJigjUgVNiDiqJ?si=b1d6
 s = pytube.Search("run by i am the kid you know what i mean")
 link = s.results[0].watch_url
 print(s.results[0].thumbnail_url)
-yt = pytube.YouTube(link)
+yt = pytube.YouTube("https://www.youtube.com/watch?v=r5AmHfCcUM4&t=0s")
 for i in yt.streams:
     print(i)
+    print(i.fps)
     pass
+'''
 yt.streams.get_by_itag(251).download()
 
 #soundcloud
@@ -42,4 +44,4 @@ assert type(track) is Track
 filename = f'./{track.artist} - {track.title}.mp3'
 
 with open(filename, 'wb+') as fp:
-    track.write_mp3_to(fp)
+    track.write_mp3_to(fp)'''
