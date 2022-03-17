@@ -203,7 +203,7 @@ class MusicBot(discord.Client):
 
 
 def get_token():
-    with open(os.path.dirname(__file__)+"/data/DiscordToken.txt", "r") as f:
+    with open("data/discordToken.txt", "r") as f:
         token = f.readline()
         return token
 
