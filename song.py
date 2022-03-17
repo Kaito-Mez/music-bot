@@ -59,7 +59,7 @@ class Song:
 
     def get_filepath(self) -> str:
         if self.is_downloaded:
-            return "sound/"+self.filename
+            return "./sound/"+self.filename
         
         else:
             return None

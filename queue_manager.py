@@ -56,7 +56,7 @@ class ServerManager():
         if self.vc:
             try:
                 await asyncio.sleep(2)
-                self.vc.play(discord.FFmpegPCMAudio("data/sounds/exit.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.disconnect(), self.client.loop))
+                self.vc.play(discord.FFmpegPCMAudio("./data/sounds/exit.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.disconnect(), self.client.loop))
                 await asyncio.sleep(3)
             except discord.errors.ClientException as e:
                 print("Leave_channel_broke", e)
@@ -70,7 +70,7 @@ class ServerManager():
                 while self.current.is_downloaded == False:
                     await asyncio.sleep(0.5)
                 try:
-                    self.vc.play(discord.FFmpegPCMAudio("data/sounds/start.mp3"), after= lambda _:self.vc.play(discord.FFmpegPCMAudio(self.get_file()), after = lambda _:self.handle_after()))
+                    self.vc.play(discord.FFmpegPCMAudio("./data/sounds/start.mp3"), after= lambda _:self.vc.play(discord.FFmpegPCMAudio(self.get_file()), after = lambda _:self.handle_after()))
                 except discord.errors.ClientException as e:
                     pass
 
@@ -182,7 +182,7 @@ class ServerManager():
                 
             self.client.on_song_end()
             self.disengage = False
-            self.vc.play(discord.FFmpegPCMAudio("data/sounds/end.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.play_audio(), self.client.loop))
+            self.vc.play(discord.FFmpegPCMAudio("./data/sounds/end.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.play_audio(), self.client.loop))
         self.closing = False
 
 
@@ -212,7 +212,7 @@ class ServerManager():
 
     async def reset_player_info(self, update=True):
         self.book.remove_page(1)
-        self.book.pages_from_json("data/screen.json")
+        self.book.pages_from_json("./data/screen.json")
         if update:
             await self.book.update_page()
 
@@ -322,16 +322,16 @@ class ServerManager():
 
     def _get_spotify_auth(self):
         data = []
-        with open("data/spotifyToken.txt", "r") as f:
+        with open("./data/spotifyToken.txt", "r") as f:
             data.append(f.readline())
 
-        with open("data/spotifySecret.txt", "r") as f:
+        with open("./data/spotifySecret.txt", "r") as f:
             data.append(f.readline())
 
         return data
 
     def _get_soundcloud_auth(self):
-        with open("data/soundcloudToken.txt", "r") as f:
+        with open("./data/soundcloudToken.txt", "r") as f:
             data = f.readline()
         return data
 
@@ -441,7 +441,7 @@ class ServerManager():
 
     def get_file(self):
         if self.current:
-            return f"sound/{self.current.filename}"
+            return f"./sound/{self.current.filename}"
 
     
 
@@ -491,7 +491,7 @@ class ServerManager():
     def normalize_stream(self, buffer, path, song):
 
 
-        with open("data/volume.txt", "r") as f:
+        with open("./data/volume.txt", "r") as f:
             target_level = int(f.readline())
 
         cmd = ["ffmpeg", "-hide_banner", "-loglevel", "warning", "-i", "pipe:0", "-vn",
@@ -536,7 +536,7 @@ class ServerManager():
             yt = pytube.YouTube(url, use_oauth=True)
 
         filename = slugify(yt.title)+".mp3"
-        path = "sound/"+filename
+        path = "./sound/"+filename
         buffer = BytesIO()
         
         if yt.length > 10800:
@@ -574,7 +574,7 @@ class ServerManager():
         title = f'{track.artist} {track.title}'
 
         buffer = BytesIO()
-        path = "sound/"+filename
+        path = "./sound/"+filename
         if track.duration > 10800:
             self.remove_song(song)
         if not os.path.isfile(path):

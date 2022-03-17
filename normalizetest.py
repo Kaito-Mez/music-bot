@@ -8,7 +8,7 @@ import time
 
 
 def _get_soundcloud_auth():
-    with open("data/soundcloudToken.txt", "r") as f:
+    with open("./data/soundcloudToken.txt", "r") as f:
         data = f.readline()
     return data
 

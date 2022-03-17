@@ -39,7 +39,7 @@ class MusicBot(discord.Client):
         #if bot doesnt have perms to make a channel
         if has_channel:
             await client.get_channel(channel_id).purge()
-            book = discordBook(self, False, "data/screen.json")
+            book = discordBook(self, False, "./data/screen.json")
             
             print(f"sending to {guild.name}")
             await book.send_book(client.get_channel(channel_id))
@@ -202,7 +202,7 @@ class MusicBot(discord.Client):
 
 
 def get_token():
-    with open("data/DiscordToken.txt", "r") as f:
+    with open("./data/DiscordToken.txt", "r") as f:
         token = f.readline()
         return token
 
