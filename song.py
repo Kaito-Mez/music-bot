@@ -4,6 +4,7 @@ import time
 
 class Song:
     def __init__(self, searchterm, requestor) -> None:
+        self.directory = os.path.dirname(__file__)
         self.title = searchterm
         if requestor.nick:
             self.requestor_name = requestor.nick

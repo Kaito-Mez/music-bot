@@ -20,6 +20,7 @@ from random import shuffle
 class ServerManager():
 
     def __init__(self, id, channel, book, client):
+        self.directory = os.path.dirname(__file__)
         self.closing = False
         self.disengage = False
         self.rewind = False

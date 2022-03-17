@@ -1,14 +1,15 @@
-from email import message
 from discord.errors import ClientException, Forbidden
 from disc_gui import discordBook
 from queue_manager import ServerManager
 import discord
 import asyncio
 import time
+import os
 
 class MusicBot(discord.Client):
 
     def __init__(self):
+        self.directory = os.path.dirname(__file__)
         self.servers = []
 
         super().__init__()
@@ -39,7 +40,7 @@ class MusicBot(discord.Client):
         #if bot doesnt have perms to make a channel
         if has_channel:
             await client.get_channel(channel_id).purge()
-            book = discordBook(self, False, "./data/screen.json")
+            book = discordBook(self, False, self.directory+"/data/screen.json")
             
             print(f"sending to {guild.name}")
             await book.send_book(client.get_channel(channel_id))
@@ -202,7 +203,7 @@ class MusicBot(discord.Client):
 
 
 def get_token():
-    with open("./data/DiscordToken.txt", "r") as f:
+    with open(os.path.dirname(__file__)+"/data/DiscordToken.txt", "r") as f:
         token = f.readline()
         return token
 
