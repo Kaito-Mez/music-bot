@@ -21,13 +21,15 @@ class MusicBot(discord.Client):
         channel_id = None
         has_channel = False
 
-        name = "8-track-fm"
+        name = "<:8TrackFM:941526015602225192> 8-track-fm"
         topic = "<:8TrackFM:941526015602225192> Join a call and send messages or links in this channel to queue music. Supported platforms: Youtube, Spotify (Link Only), Souncloud (Link Only)"
         for channel in channels:
             if channel.name == name:
                 has_channel = True
                 channel_id = channel.id
                 break
+            elif channel.name == "8-track-fm":
+                await channel.delete()
         if not has_channel:
             try:
                 channel_id = await guild.create_text_channel(name=name, topic=topic)

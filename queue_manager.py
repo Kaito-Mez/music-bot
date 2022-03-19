@@ -422,18 +422,19 @@ class ServerManager():
 
     def advance(self):
         loop = True
-        if len(self.queue) == 0:
+        if len(self.queue) == 0 or self.index >= len(self.queue) - 1:
             self.index = len(self.queue) 
             self.current = None
             asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
             return False
 
-        elif self.index >= len(self.queue) - 1:
-            self.index = 0
-            self.current = self.queue[self.index]
-            asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
-            return True
-
+            """
+            elif self.index >= len(self.queue) - 1:
+                self.index = 0
+                self.current = self.queue[self.index]
+                asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
+                return True
+            """
         else:
             self.index += 1
             self.current = self.queue[self.index]
