@@ -28,7 +28,7 @@ class MusicBot(discord.Client):
                 has_channel = True
                 channel_id = channel.id
                 break
-            elif channel.name == "8-track-fm":
+            elif channel.name == "8trackfm941526015602225192-8-track-fm":
                 await channel.delete()
         if not has_channel:
             try:
