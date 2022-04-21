@@ -577,8 +577,10 @@ class ServerManager():
 
         buffer = BytesIO()
         path = "./sound/"+filename
+        '''
         if track.duration > 10800:
-            self.remove_song(song)
+            print("song TOO LONG !!!!")
+            self.remove_song(song)'''
         if not os.path.isfile(path):
             if not song.is_cancelled:
                 track.write_mp3_to(buffer)
