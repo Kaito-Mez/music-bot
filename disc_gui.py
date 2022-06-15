@@ -282,8 +282,7 @@ class discordBook:
                 else:
                     print('page changed')
                     break
-            
-            print("DONE WITH REACTS")
+                
         except (AttributeError, discord.NotFound) as e:
             print(e)
 

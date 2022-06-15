@@ -8,12 +8,11 @@ import os
 
 class MusicBot(discord.Client):
 
-    def __init__(self):
-        discord.Intents.reactions = True
+    def __init__(self, intents):
         self.directory = os.path.dirname(__file__)
         self.servers = []
 
-        super().__init__()
+        super().__init__(intents = intents)
 
 
     async def _setup_guild(self, guild):
@@ -55,7 +54,6 @@ class MusicBot(discord.Client):
 
             async for message in channel.history(limit=100):
                 if not found:
-                    print(message)
                     if not is_not_music_message(message):
                         music_message = await channel.fetch_message(message.id)
                         found = True
@@ -106,7 +104,7 @@ class MusicBot(discord.Client):
         return False
 
     async def on_message(self, message):
-        
+        print("MESSAGE RECEIVED")
 
         async def add_song(server, message):
             server.add(message.content, message.author)
@@ -116,7 +114,7 @@ class MusicBot(discord.Client):
         if message.author == client.user:
             return
 
-        server = self.get_server_from_message(message)
+        server = self.get_server_from_message(message.channel.id)
         if server:
             if message.channel.id == server.get_channel_id():
                 await asyncio.sleep(0.5)
@@ -275,7 +273,9 @@ def get_token():
 
 
 if __name__ == "__main__":
-    client = MusicBot()
+    intents = discord.Intents.all()
+    
+    client = MusicBot(intents=intents)
     client.run(get_token())
 
 #Stop Button
