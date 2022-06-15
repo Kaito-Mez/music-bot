@@ -43,8 +43,7 @@ class MusicBot(discord.Client):
 
         if has_channel:
             def is_not_music_message(message):
-                #return message.author != client.user
-                return True
+                return message.author != client.user
             channel = client.get_channel(channel_id)
             await channel.purge(check = is_not_music_message)
             book = discordBook(self, False, self.directory+"/data/screen.json")
