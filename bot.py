@@ -1,7 +1,4 @@
-from operator import is_not
-from tkinter.tix import Tree
 from discord.errors import ClientException, Forbidden
-from numpy import true_divide
 from disc_gui import discordBook
 from queue_manager import ServerManager
 import discord
