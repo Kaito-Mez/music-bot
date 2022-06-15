@@ -154,17 +154,16 @@ class discordBook:
             await self.unsend_book()
         
         if message != None:
+            print("attaching message")
             self.message = message
         elif message == None:
+            print("creating message")
             self.message = await channel.send(embed = Embed.from_dict(self.pages[1]))
 
         self.current_page = 1
 
         #uses ensure_future to resolve send_book before update finishes
-        if message != None:
-            asyncio.ensure_future(self.update_reacts(purge=True))
-        elif message == None:
-            asyncio.ensure_future(self.update_reacts())
+        asyncio.ensure_future(self.update_reacts())
 
     #deletes message from discord and sets message to none
     async def unsend_book(self):
@@ -230,7 +229,7 @@ class discordBook:
             print('message has not been sent (update_page)')
     
     #clears all un-needed reacts then repopulates
-    async def update_reacts(self, purge = True):
+    async def update_reacts(self, purge = False):
         try:
             #updates current reactions on the message
             async def get_current():
@@ -244,7 +243,6 @@ class discordBook:
                         await self.message.clear_reaction(emoji)
                     except discord.Forbidden:
                         await self.message.remove_reaction(emoji, self.client.user)
-
 
             #cycles through all the current emotes and removes the unneeded ones
             for emoji in await get_current():
@@ -284,52 +282,48 @@ class discordBook:
                 else:
                     print('page changed')
                     break
-
+            
+            print("DONE WITH REACTS")
         except (AttributeError, discord.NotFound) as e:
             print(e)
 
     #needs to be called in a loop in order to get multiple responses
     #returns the index number of whatever react gets clicked
-    async def handle_react(self, reaction, responder):
+    async def handle_react(self, emoji, responder, message_id):
         
         def check(responder):
             #print(reaction.message, self.message)
-            return(responder != self.client.user and reaction.message == self.message)
+            return(responder != self.client.user and message_id == self.message.id)
 
         if not check(responder):
             return -1
-            
-
-        print('responder is {}'.format(responder))
-
-        user = responder
 
         try:
-            await self.message.remove_reaction(reaction, user)
+            await self.message.remove_reaction(emoji, responder)
         except discord.Forbidden:
             print('couldnt remove emote')
             
         #handles response after receiving it
         if self.use_preset_reacts == True:
-            if str(reaction) in self.preset_reacts:
+            if str(emoji) in self.preset_reacts:
                 
-                if str(reaction.emoji) == '⬅':
+                if str(emoji) == '⬅':
                     await self.cycle_page('prev')
 
-                elif str(reaction) == '➡':
+                elif str(emoji) == '➡':
                     await self.cycle_page('next')
                     
-                elif str(reaction) == '🗑':
+                elif str(emoji) == '🗑':
                     await self.unsend_book()
                     #returns 0 to signal that the loop should stop
                     print("GARBAGE")
                     return(0)
 
         #returns a value based on index of the emote in the relevant emote list
-        if str(reaction) in self.reacts[self.current_page]:
+        if str(emoji) in self.reacts[self.current_page]:
 
             #makes it so the 1st emote in the list returns 1 as 0 is reserved for deleting the page
-            index = self.reacts[self.current_page].index(str(reaction))
+            index = self.reacts[self.current_page].index(str(emoji))
             return(index+1)
 
 

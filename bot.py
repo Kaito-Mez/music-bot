@@ -9,6 +9,7 @@ import os
 class MusicBot(discord.Client):
 
     def __init__(self):
+        discord.Intents.reactions = True
         self.directory = os.path.dirname(__file__)
         self.servers = []
 
@@ -20,7 +21,6 @@ class MusicBot(discord.Client):
         channels = await guild.fetch_channels()
         channel_id = None
         has_channel = False
-        has_message = False
 
         name = "8-track-fm"
         topic = "<:8TrackFM:941526015602225192> Join a call and send messages or links in this channel to queue music. Supported platforms: Youtube, Spotify (Link Only), Souncloud (Link Only)"
@@ -55,8 +55,9 @@ class MusicBot(discord.Client):
 
             async for message in channel.history(limit=100):
                 if not found:
+                    print(message)
                     if not is_not_music_message(message):
-                        music_message = message
+                        music_message = await channel.fetch_message(message.id)
                         found = True
 
             if music_message:
@@ -98,9 +99,9 @@ class MusicBot(discord.Client):
                 return server
         return None
 
-    def get_server_from_message(self, message):
+    def get_server_from_message(self, channel_id):
         for server in self.servers:
-            if message.channel.id == server.channel:
+            if channel_id == server.channel:
                 return server
         return False
 
@@ -171,8 +172,51 @@ class MusicBot(discord.Client):
         print("Version: {}".format(discord.__version__))
         print(discord.opus.is_loaded())
 
-    
+    async def on_raw_reaction_add(self, payload:discord.RawReactionActionEvent):
+        member = payload.member
+        emoji = payload.emoji
+        message_id = payload.message_id
+        channel_id = payload.channel_id
+        if client.user == member:
+            return
+
+        server = self.get_server_from_message(channel_id)
+        if server:
+            book = server.book
+            result = await book.handle_react(emoji, member, message_id)
+            
+        else:
+            result = -1
+
+
+        if result == -1:
+            return
+        
+        elif result == 1:
+            await server.to_start()
+
+        elif result == 2:
+            await server.previous_audio()
+
+        elif result == 3:
+            await self.handle_play_pause(server, member)
+        
+        elif result == 4:
+            await server.next_audio()
+
+        elif result == 5:
+            await server.to_end()
+            
+        elif result == 6:
+            server.remove_song(server.current)
+
+        elif result == 7:
+            await server.stop_audio()
+
+        print("React result ", result)
+
     #connect ui with bot
+    '''
     async def on_reaction_add(self, reaction, member):
         if client.user == member:
             return
@@ -212,7 +256,7 @@ class MusicBot(discord.Client):
             await server.stop_audio()
 
         print("React result ", result)
-
+    '''
 
     async def on_voice_state_update(self, member, before, after):
         if before.channel:
