@@ -20,6 +20,7 @@ class MusicBot(discord.Client):
         channels = await guild.fetch_channels()
         channel_id = None
         has_channel = False
+        has_message = False
 
         name = "8-track-fm"
         topic = "<:8TrackFM:941526015602225192> Join a call and send messages or links in this channel to queue music. Supported platforms: Youtube, Spotify (Link Only), Souncloud (Link Only)"
@@ -31,6 +32,7 @@ class MusicBot(discord.Client):
             elif channel.name == "8trackfm941526015602225192-8-track-fm":
                 await channel.delete()
         if not has_channel:
+            #if bot doesnt have perms to make a channel
             try:
                 channel_id = await guild.create_text_channel(name=name, topic=topic)
                 channel_id = channel_id.id
@@ -39,13 +41,25 @@ class MusicBot(discord.Client):
                 print(guild.name, "couldnt create chanenl")
         
 
-        #if bot doesnt have perms to make a channel
         if has_channel:
-            await client.get_channel(channel_id).purge()
+            def is_not_music_message(message):
+                return message.author != client.user
+            channel = client.get_channel(channel_id)
+            await channel.purge(check = is_not_music_message)
             book = discordBook(self, False, self.directory+"/data/screen.json")
-            
+            potential_music_message = await channel.fetch_message(channel.last_message_id)
+            print(potential_music_message)
             print(f"sending to {guild.name}")
-            await book.send_book(client.get_channel(channel_id))
+            attached = False
+            if potential_music_message:
+
+                if not is_not_music_message(potential_music_message):
+                    print("attaching")
+                    await book.send_book(channel, potential_music_message)
+                    attached = True
+            if not attached:
+                print("creating")
+                await book.send_book(channel)
 
             
             server = ServerManager(guild.id, channel_id, book, self)

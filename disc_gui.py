@@ -148,12 +148,16 @@ class discordBook:
 
     #sends the message as well as storing it in self.message which is required for the other 
     #needs to be changed for the multi instance system
-    async def send_book(self, channel):
+    async def send_book(self, channel, message = None):
         #fix this to ask for perms to delete other persons book
         if self.message != None:
             await self.unsend_book()
+        
+        if message != None:
+            self.message = message
+        elif message == None:
+            self.message = await channel.send(embed = Embed.from_dict(self.pages[1]))
 
-        self.message = await channel.send(embed = Embed.from_dict(self.pages[1]))
         self.current_page = 1
 
         #uses ensure_future to resolve send_book before update finishes
