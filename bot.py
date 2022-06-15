@@ -47,9 +47,10 @@ class MusicBot(discord.Client):
             channel = client.get_channel(channel_id)
             await channel.purge(check = is_not_music_message)
             book = discordBook(self, False, self.directory+"/data/screen.json")
+            
+            print(f"sending to {guild.name}")
             potential_music_message = await channel.fetch_message(channel.last_message_id)
             print(potential_music_message)
-            print(f"sending to {guild.name}")
             attached = False
             if potential_music_message:
 
