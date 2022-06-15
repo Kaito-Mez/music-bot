@@ -162,7 +162,7 @@ class discordBook:
 
         #uses ensure_future to resolve send_book before update finishes
         if message != None:
-            asyncio.ensure_future(self.update_reacts(purge=False))
+            asyncio.ensure_future(self.update_reacts(purge=True))
         elif message == None:
             asyncio.ensure_future(self.update_reacts())
 
@@ -230,7 +230,7 @@ class discordBook:
             print('message has not been sent (update_page)')
     
     #clears all un-needed reacts then repopulates
-    async def update_reacts(self, purge = False):
+    async def update_reacts(self, purge = True):
         try:
             #updates current reactions on the message
             async def get_current():
