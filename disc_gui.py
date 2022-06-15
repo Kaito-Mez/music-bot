@@ -161,7 +161,10 @@ class discordBook:
         self.current_page = 1
 
         #uses ensure_future to resolve send_book before update finishes
-        asyncio.ensure_future(self.update_reacts())
+        if message != None:
+            asyncio.ensure_future(self.update_reacts(purge=False))
+        elif message == None:
+            asyncio.ensure_future(self.update_reacts())
 
     #deletes message from discord and sets message to none
     async def unsend_book(self):
@@ -227,13 +230,21 @@ class discordBook:
             print('message has not been sent (update_page)')
     
     #clears all un-needed reacts then repopulates
-    async def update_reacts(self):
+    async def update_reacts(self, purge = False):
         try:
             #updates current reactions on the message
             async def get_current():
                 cur_message = discord.utils.get(await self.message.channel.history(limit=10).flatten(), id = self.message.id)
                 cur_reactions = cur_message.reactions
                 return(cur_reactions)
+
+            if purge:
+                for emoji in await get_current():
+                    try:
+                        await self.message.clear_reaction(emoji)
+                    except discord.Forbidden:
+                        await self.message.remove_reaction(emoji, self.client.user)
+
 
             #cycles through all the current emotes and removes the unneeded ones
             for emoji in await get_current():

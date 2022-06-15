@@ -1,4 +1,7 @@
+from operator import is_not
+from tkinter.tix import Tree
 from discord.errors import ClientException, Forbidden
+from numpy import true_divide
 from disc_gui import discordBook
 from queue_manager import ServerManager
 import discord
@@ -43,27 +46,28 @@ class MusicBot(discord.Client):
 
         if has_channel:
             def is_not_music_message(message):
-                return message.author != client.user
+                #return message.author != client.user
+                return True
             channel = client.get_channel(channel_id)
             await channel.purge(check = is_not_music_message)
             book = discordBook(self, False, self.directory+"/data/screen.json")
 
             print(f"sending to {guild.name}")
-            try:
-                potential_music_message = await channel.fetch_message(channel.last_message_id)
-            except discord.errors.NotFound:
-                potential_music_message = None
+            found = False
+            
+            music_message = None
 
-            print(potential_music_message)
-            attached = False
-            if potential_music_message:
+            async for message in channel.history(limit=100):
+                if not found:
+                    if not is_not_music_message(message):
+                        music_message = message
+                        found = True
 
-                if not is_not_music_message(potential_music_message):
-                    print("attaching")
-                    await book.send_book(channel, potential_music_message)
-                    attached = True
-                    
-            if not attached:
+            if music_message:
+                print("attaching")
+                await book.send_book(channel, music_message)
+
+            else:
                 print("creating")
                 await book.send_book(channel)
 
