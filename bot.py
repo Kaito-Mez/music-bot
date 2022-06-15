@@ -47,9 +47,13 @@ class MusicBot(discord.Client):
             channel = client.get_channel(channel_id)
             await channel.purge(check = is_not_music_message)
             book = discordBook(self, False, self.directory+"/data/screen.json")
-            
+
             print(f"sending to {guild.name}")
-            potential_music_message = await channel.fetch_message(channel.last_message_id)
+            try:
+                potential_music_message = await channel.fetch_message(channel.last_message_id)
+            except discord.errors.NotFound:
+                potential_music_message = None
+
             print(potential_music_message)
             attached = False
             if potential_music_message:
@@ -58,6 +62,7 @@ class MusicBot(discord.Client):
                     print("attaching")
                     await book.send_book(channel, potential_music_message)
                     attached = True
+                    
             if not attached:
                 print("creating")
                 await book.send_book(channel)
