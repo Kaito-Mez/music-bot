@@ -1,6 +1,5 @@
 from concurrent.futures import process
 from operator import index
-import queue
 from django.utils.text import slugify
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -43,6 +42,8 @@ class ServerManager():
 
         try:
             self.vc = await self.client.get_channel(channel).connect(reconnect = True)
+            if self.vc:
+                self.vc.play(discord.FFmpegPCMAudio("./data/sounds/bootup.mp3"))
         except discord.errors.ClientException as e:
             self.vc = None
             self.connected = False
@@ -290,9 +291,9 @@ class ServerManager():
 
     def remove_song(self, song):
         self.index -= 1
-        song.is_cancelled = True
-
-        self.queue.remove(song)
+        if song:
+            song.is_cancelled = True
+            self.queue.remove(song)
 
         if song == self.current:
             self.current = None
