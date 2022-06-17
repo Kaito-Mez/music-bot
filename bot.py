@@ -150,6 +150,7 @@ class MusicBot(discord.Client):
             if server.is_member_connected(member):
                 await server.join_channel(member.voice.channel.id)
                 await server.play_audio()
+                await asyncio.sleep(4)
 
 
 
