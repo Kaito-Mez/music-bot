@@ -1,3 +1,4 @@
+from email import message
 from discord.errors import ClientException, Forbidden
 from disc_gui import discordBook
 from queue_manager import ServerManager
@@ -97,7 +98,7 @@ class MusicBot(discord.Client):
                 return server
         return None
 
-    def get_server_from_message(self, channel_id):
+    def get_server_from_channel_id(self, channel_id):
         for server in self.servers:
             if channel_id == server.channel:
                 return server
@@ -114,7 +115,7 @@ class MusicBot(discord.Client):
         if message.author == client.user:
             return
 
-        server = self.get_server_from_message(message.channel.id)
+        server = self.get_server_from_channel_id(message.channel.id)
         if server:
             if message.channel.id == server.get_channel_id():
                 await asyncio.sleep(0.5)
@@ -129,7 +130,17 @@ class MusicBot(discord.Client):
                 
 
 
+    async def on_raw_message_delete(self, payload):
+        message_id = payload.message_id
+        channel_id = payload.channel_id
         
+        server = self.get_server_from_channel_id(channel_id)
+        guild = client.get_guild(server.id)
+
+        server_message_id = server.book.message.id
+        if server_message_id == message_id:
+            asyncio.sleep(5)
+            await self._setup_guild(guild)
     
 
 
@@ -170,6 +181,7 @@ class MusicBot(discord.Client):
         print("Version: {}".format(discord.__version__))
         print(discord.opus.is_loaded())
 
+    #Respond to reacts to the message
     async def on_raw_reaction_add(self, payload:discord.RawReactionActionEvent):
         member = payload.member
         emoji = payload.emoji
@@ -178,7 +190,7 @@ class MusicBot(discord.Client):
         if client.user == member:
             return
 
-        server = self.get_server_from_message(channel_id)
+        server = self.get_server_from_channel_id(channel_id)
         if server:
             book = server.book
             result = await book.handle_react(emoji, member, message_id)
@@ -212,49 +224,6 @@ class MusicBot(discord.Client):
             await server.stop_audio()
 
         print("React result ", result)
-
-    #connect ui with bot
-    '''
-    async def on_reaction_add(self, reaction, member):
-        if client.user == member:
-            return
-
-        msg = reaction.message
-        server = self.get_server_from_message(msg)
-        if server:
-            book = server.book
-            result = await book.handle_react(reaction, member)
-            
-        else:
-            result = -1
-
-
-        if result == -1:
-            return
-        
-        elif result == 1:
-            await server.to_start()
-
-        elif result == 2:
-            await server.previous_audio()
-
-        elif result == 3:
-            await self.handle_play_pause(server, member)
-        
-        elif result == 4:
-            await server.next_audio()
-
-        elif result == 5:
-            await server.to_end()
-            
-        elif result == 6:
-            server.remove_song(server.current)
-
-        elif result == 7:
-            await server.stop_audio()
-
-        print("React result ", result)
-    '''
 
     async def on_voice_state_update(self, member, before, after):
         if before.channel:
