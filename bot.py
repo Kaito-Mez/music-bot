@@ -137,6 +137,8 @@ class MusicBot(discord.Client):
         server = self.get_server_from_channel_id(channel_id)
         guild = client.get_guild(server.id)
 
+        self.servers.remove(server)
+
         server_message_id = server.book.message.id
         if server_message_id == message_id:
             asyncio.sleep(5)
