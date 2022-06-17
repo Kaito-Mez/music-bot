@@ -137,12 +137,6 @@ class MusicBot(discord.Client):
 
     async def handle_play_pause(self, server, member):
 
-        if not server.vc:
-            if server.is_member_connected(member):
-                await server.join_channel(member.voice.channel.id)
-            else:
-                return
-
         if server.vc:
             if server.is_member_in_call(member):
                 if server.is_playing():
@@ -151,6 +145,11 @@ class MusicBot(discord.Client):
                     await server.resume_audio()
                 else:
                     await server.play_audio()
+                    
+        if not server.vc:
+            if server.is_member_connected(member):
+                await server.join_channel(member.voice.channel.id)
+
 
 
 
