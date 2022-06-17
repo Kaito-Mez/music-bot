@@ -149,9 +149,8 @@ class MusicBot(discord.Client):
         if not server.vc:
             if server.is_member_connected(member):
                 await server.join_channel(member.voice.channel.id)
-                await server.play_audio()
                 await asyncio.sleep(4)
-
+                await server.play_audio()
 
 
 
