@@ -114,30 +114,18 @@ class MusicBot(discord.Client):
 
         if message.author == client.user:
             return
-        print("1")
         server = self.get_server_from_channel_id(message.channel.id)
-        print("2")
         if server:
-            print("3")
             if message.channel.id == server.get_channel_id():
-                print("4")
                 await asyncio.sleep(0.5)
-                print("5")
                 await message.delete()
-                print("6")
                 if server.vc:
-                    print("7")
                     if server.is_member_in_call(message.author):
-                        print("8")
                         await add_song(server, message)
 
                 else:
-                    print("9")
                     if server.is_member_connected(message.author):
-                        print("10")
                         await add_song(server, message)
-                        print("11")
-        print("12")
 
     async def on_raw_message_delete(self, payload):
         print("on_raw_message_delete")
@@ -172,7 +160,7 @@ class MusicBot(discord.Client):
         if not server.vc:
             if server.is_member_connected(member):
                 await server.join_channel(member.voice.channel.id)
-                #await asyncio.sleep(5)
+                await asyncio.sleep(5)
                 await server.play_audio()
 
 
