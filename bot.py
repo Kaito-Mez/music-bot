@@ -140,6 +140,7 @@ class MusicBot(discord.Client):
         print("12")
 
     async def on_raw_message_delete(self, payload):
+        print("on_raw_message_delete")
         message_id = payload.message_id
         channel_id = payload.channel_id
         
