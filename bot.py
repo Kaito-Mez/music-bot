@@ -135,14 +135,15 @@ class MusicBot(discord.Client):
         channel_id = payload.channel_id
         
         server = self.get_server_from_channel_id(channel_id)
-        guild = client.get_guild(server.id)
+        if server:
+            guild = client.get_guild(server.id)
 
-        self.servers.remove(server)
+            self.servers.remove(server)
 
-        server_message_id = server.book.message.id
-        if server_message_id == message_id:
-            asyncio.sleep(5)
-            await self._setup_guild(guild)
+            server_message_id = server.book.message.id
+            if server_message_id == message_id:
+                asyncio.sleep(5)
+                await self._setup_guild(guild)
     
 
 
