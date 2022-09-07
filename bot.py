@@ -139,7 +139,7 @@ class MusicBot(discord.Client):
         server_message_id = server.book.message.id
         if server_message_id == message_id:
             self.servers.remove(server)
-            asyncio.sleep(5)
+            await asyncio.sleep(5)
             await self._setup_guild(guild)
     
 
