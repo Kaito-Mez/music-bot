@@ -3,7 +3,40 @@ import datetime
 import time
 
 class Song:
-    def __init__(self, searchterm, requestor) -> None:
+    '''Container for a song. Created when a song is requested and fully populated upon song download'''
+
+    
+    directory = ""
+    '''Path to the stored file'''
+
+    title = ""
+    '''Title of the song'''
+
+    requestor_avatar = ""
+    '''URL of the avatar of the discord user who requested the song'''
+
+    filename = ""
+    '''Filename of the stored file'''
+
+    thumbnail = ""
+    '''URL of the thumbnail of the song/video'''
+
+    url = ""
+    '''URL to the song/video'''
+
+    duration = 0
+    '''Duration of the song in seconds'''
+
+    downloading = False
+    '''Whether the file is currently being downloaded'''
+
+    is_downloaded = False
+    '''Whether the file has been downloaded and the metadata populated'''
+
+    is_cancelled = False
+    '''Whether the download for this video has been calculated'''
+
+    def __init__(self, searchterm, requestor):
         self.directory = os.path.dirname(__file__)
         self.title = searchterm
         if requestor.nick:
@@ -19,9 +52,8 @@ class Song:
         self.downloading = False
         self.is_cancelled = False
 
-    
-
     def populate(self, future):
+        '''Populates the metadata once the download future has completed'''
         result = future.result()
         self.filename = result["filename"]
         self.thumbnail = result["thumbnail"]
@@ -30,25 +62,13 @@ class Song:
         self.url = result["url"]
 
         self.duration = str(datetime.timedelta(seconds=self.duration))
-        #brokey
-        '''
-        #splits second into hours and minutes and makes self.duration a string in either H/MM/SS, MM/SS, or SS format(eg 8:09:01)
-        if self.duration < 60:
-            #branch for SS format
-            self.duration = f"{(str(int(self.duration % 60))).zfill(2)}"
-        elif self.duration < 3600:
-            #branch for MM/SS format
-            self.duration = f"{(str(int(self.duration / 60))).zfill(2)}:{(str(int(self.duration % 60))).zfill(2)}"
-        else:
-            #branch for H/MM/SS format, would break if 10 hours but I'm assuming you don't allow 10 hour queues anyway 
-            self.duration = f"{(int(self.duration / 3600))}:{(str(int((self.duration % 3600) / 60))).zfill(2)}:{(str(int((self.duration % 60) / 60))).zfill(2)}"
-        '''
         self.is_downloaded = True
         self.downloading = False
         print(f"Populating: {self.title}, {self.filename}, {self.thumbnail}, {self.duration}")
         return
 
     def empty(self):
+        '''Deletes the local file once it is no longer needed'''
         self.is_cancelled = True
         if self.get_filepath():
             while os.path.isfile(self.get_filepath()):
@@ -59,6 +79,7 @@ class Song:
                     time.sleep(0.2)
 
     def get_filepath(self) -> str:
+        '''Returns filepath'''
         if self.is_downloaded:
             return "./sound/"+self.filename
         
