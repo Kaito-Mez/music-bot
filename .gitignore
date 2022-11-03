@@ -166,3 +166,4 @@ cython_debug/
 #Token Files
 data/*.txt
 data/soundcloudToken.txt
+data/soundcloudToken.txt
