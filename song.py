@@ -43,7 +43,7 @@ class Song:
             self.requestor_name = requestor.nick
         else:
             self.requestor_name = requestor.name
-        self.requestor_avatar = str(requestor.avatar_url)
+        self.requestor_avatar = str(requestor.avatar.url)
         self.filename = ""
         self.thumbnail = ""
         self.url = ""
