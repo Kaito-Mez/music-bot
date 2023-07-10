@@ -549,7 +549,7 @@ class ServerManager():
             print("File not found")
             if not song.is_cancelled:
                 print("streaming to buffer")
-                itags = [18, 251, 140, 139]
+                itags = [251, 140, 139]
                 stream = None
                 for i in itags:
                     if not stream:
