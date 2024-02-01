@@ -1,4 +1,4 @@
-from auth import get_soundcloud_auth, get_spotify_auth
+import auth as authorisation
 from django.utils.text import slugify
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -26,7 +26,7 @@ class ServerManager():
         self.queue = []
         self.index = 0
         self.executor = ThreadPoolExecutor(thread_name_prefix="ServerManagerExecutor")
-        auth = get_spotify_auth()
+        auth = authorisation.get_spotify_auth()
         self.spotify = Spotify(auth_manager=SpotifyClientCredentials(client_id=auth[0], client_secret=auth[1]))
         self.soundcloud = SoundcloudAPI()
 

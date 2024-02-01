@@ -10,7 +10,9 @@ def get_spotify_auth():
 
     with open("./data/spotifySecret.txt", "r") as f:
         data.append(f.readline())
-
+    
+    print(data)
+    
     return data
 
 def get_soundcloud_auth():
