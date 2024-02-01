@@ -6,13 +6,13 @@ def get_token():
 def get_spotify_auth():
     data = []
     with open("./data/spotifyToken.txt", "r") as f:
-        data.append(f.readline())
+        data.append(f.readline().replace("\n", ""))
 
     with open("./data/spotifySecret.txt", "r") as f:
-        data.append(f.readline())
+        data.append(f.readline().replace("\n", ""))
     
     print(data)
-    
+
     return data
 
 def get_soundcloud_auth():
