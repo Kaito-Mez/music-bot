@@ -7,7 +7,7 @@ from sclib import SoundcloudAPI, Track
 from concurrent.futures.thread import ThreadPoolExecutor
 import os
 import pytube
-from song import Song
+from models.song import Song
 import discord
 import asyncio
 import time

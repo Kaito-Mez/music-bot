@@ -1,11 +1,12 @@
-from email import message
+from auth import *
 from discord.errors import ClientException, Forbidden
-from disc_gui import discordBook
+from email import message
+from libs.disc_gui import discordBook
 from queue_manager import ServerManager
-import discord
 import asyncio
-import time
+import discord
 import os
+import time
 
 class MusicBot(discord.Client):
 
@@ -14,7 +15,6 @@ class MusicBot(discord.Client):
         self.servers = []
 
         super().__init__(intents = intents)
-
 
     async def _setup_guild(self, guild):
 
@@ -72,11 +72,9 @@ class MusicBot(discord.Client):
 
             self.servers.append(server)
 
-
     async def on_guild_join(self, guild):
         print("Guild Joined ", guild.name)
         await self._setup_guild(guild)
-
 
     def on_song_end(self):
         t = time.time()
@@ -87,7 +85,7 @@ class MusicBot(discord.Client):
             server.download_all()
 
         t2 = time.time()
-        print(f"Glitch time ~{t2-t}s")
+        print(f"DEBUG: Glitch time ~{t2-t}s")
         
         #for server in self.servers:
         #   server.resume_audio()
@@ -105,15 +103,16 @@ class MusicBot(discord.Client):
         return False
 
     async def on_message(self, message):
-        print("MESSAGE RECEIVED")
 
         async def add_song(server, message):
+            print("DEBUG: Adding song - ", message.content)
             server.add(message.content, message.author)
             if not server.is_playing():
                 await self.handle_play_pause(server, message.author)
 
         if message.author == client.user:
             return
+        
         server = self.get_server_from_channel_id(message.channel.id)
         if server:
             if message.channel.id == server.get_channel_id():
@@ -122,7 +121,6 @@ class MusicBot(discord.Client):
                 if server.vc:
                     if server.is_member_in_call(message.author):
                         await add_song(server, message)
-
                 else:
                     if server.is_member_connected(message.author):
                         await add_song(server, message)
@@ -141,10 +139,6 @@ class MusicBot(discord.Client):
             self.servers.remove(server)
             await asyncio.sleep(5)
             await self._setup_guild(guild)
-    
-
-
-
 
     async def handle_play_pause(self, server, member):
 
@@ -162,14 +156,6 @@ class MusicBot(discord.Client):
                 await server.join_channel(member.voice.channel.id)
                 await asyncio.sleep(5)
                 await server.play_audio()
-
-
-
-
-
-
-    
-
 
     async def on_ready(self):
         for guild in client.guilds:
@@ -231,15 +217,6 @@ class MusicBot(discord.Client):
             if server:
                 if server.is_bot_alone():
                     await server.stop_audio()
-
-
-
-
-def get_token():
-    with open("data/discordToken.txt", "r") as f:
-        token = f.readline()
-        return token
-
 
 if __name__ == "__main__":
     intents = discord.Intents.all()
