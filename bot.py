@@ -16,6 +16,152 @@ class MusicBot(discord.Client):
 
         super().__init__(intents = intents)
 
+    async def on_guild_join(self, guild):
+        print("Guild Joined ", guild.name)
+        await self._setup_guild(guild)
+
+    async def on_message(self, message):
+
+        async def add_song(server, message):
+            print("DEBUG: Adding song - ", message.content)
+            server.add(message.content, message.author)
+            if not server.is_playing():
+                await self.handle_play_pause(server, message.author)
+
+        if message.author == client.user:
+            return
+        
+        server = self.get_server_from_channel_id(message.channel.id)
+        if server:
+            if message.channel.id == server.get_channel_id():
+                await asyncio.sleep(0.5)
+                await message.delete()
+                if server.vc:
+                    if server.is_member_in_call(message.author):
+                        await add_song(server, message)
+                else:
+                    if server.is_member_connected(message.author):
+                        await add_song(server, message)
+
+    async def on_raw_message_delete(self, payload):
+        print("on_raw_message_delete")
+        message_id = payload.message_id
+        channel_id = payload.channel_id
+        
+        server = self.get_server_from_channel_id(channel_id)
+        guild = client.get_guild(server.id)
+
+
+        server_message_id = server.book.message.id
+        if server_message_id == message_id:
+            self.servers.remove(server)
+            await asyncio.sleep(5)
+            await self._setup_guild(guild)
+
+    #Respond to reacts to the message
+    async def on_raw_reaction_add(self, payload:discord.RawReactionActionEvent):
+        member = payload.member
+        emoji = payload.emoji
+        message_id = payload.message_id
+        channel_id = payload.channel_id
+        if client.user == member:
+            return
+
+        server = self.get_server_from_channel_id(channel_id)
+        if server:
+            book = server.book
+            result = await book.handle_react(emoji, member, message_id)
+            
+        else:
+            result = -1
+
+
+        if result == -1:
+            return
+        
+        elif result == 1:
+            await server.to_start()
+
+        elif result == 2:
+            await server.previous_audio()
+
+        elif result == 3:
+            await self.handle_play_pause(server, member)
+        
+        elif result == 4:
+            await server.next_audio()
+
+        elif result == 5:
+            await server.to_end()
+            
+        elif result == 6:
+            server.remove_song(server.current)
+
+        elif result == 7:
+            await server.stop_audio()
+
+        print("React result ", result)
+
+    async def on_voice_state_update(self, member, before, after):
+        if before.channel:
+            server = self.get_server_from_id(before.channel.guild.id)
+            if server:
+                if server.is_bot_alone():
+                    await server.stop_audio()
+
+    async def on_ready(self):
+        for guild in client.guilds:
+            await self._setup_guild(guild)
+        
+        print("Bot Online!")
+        print("Name: {}".format(self.user.name))
+        print("ID: {}".format(self.user.id))
+        print("Version: {}".format(discord.__version__))
+        print(discord.opus.is_loaded())
+
+    async def handle_play_pause(self, server, member):
+
+        if server.vc:
+            if server.is_member_in_call(member):
+                if server.is_playing():
+                    await server.pause_audio()
+                elif server.is_paused():
+                    await server.resume_audio()
+                else:
+                    await server.play_audio()
+
+        if not server.vc:
+            if server.is_member_connected(member):
+                await server.join_channel(member.voice.channel.id)
+                await asyncio.sleep(5)
+                await server.play_audio()
+
+    def get_server_from_channel_id(self, channel_id):
+        for server in self.servers:
+            if channel_id == server.channel:
+                return server
+        return False
+
+    def get_server_from_id(self, id):
+        for server in self.servers:
+            if server.id == id:
+                return server
+        return None
+
+    def on_song_end(self):
+        t = time.time()
+        #for server in self.servers:
+        #   server.pause_audio()
+
+        for server in self.servers:
+            server.download_all()
+
+        t2 = time.time()
+        print(f"DEBUG: Glitch time ~{t2-t}s")
+        
+        #for server in self.servers:
+        #   server.resume_audio()
+
     async def _setup_guild(self, guild):
 
         channels = await guild.fetch_channels()
@@ -71,152 +217,6 @@ class MusicBot(discord.Client):
             server = ServerManager(guild.id, channel_id, book, self)
 
             self.servers.append(server)
-
-    async def on_guild_join(self, guild):
-        print("Guild Joined ", guild.name)
-        await self._setup_guild(guild)
-
-    def on_song_end(self):
-        t = time.time()
-        #for server in self.servers:
-        #   server.pause_audio()
-
-        for server in self.servers:
-            server.download_all()
-
-        t2 = time.time()
-        print(f"DEBUG: Glitch time ~{t2-t}s")
-        
-        #for server in self.servers:
-        #   server.resume_audio()
-
-    def get_server_from_id(self, id):
-        for server in self.servers:
-            if server.id == id:
-                return server
-        return None
-
-    def get_server_from_channel_id(self, channel_id):
-        for server in self.servers:
-            if channel_id == server.channel:
-                return server
-        return False
-
-    async def on_message(self, message):
-
-        async def add_song(server, message):
-            print("DEBUG: Adding song - ", message.content)
-            server.add(message.content, message.author)
-            if not server.is_playing():
-                await self.handle_play_pause(server, message.author)
-
-        if message.author == client.user:
-            return
-        
-        server = self.get_server_from_channel_id(message.channel.id)
-        if server:
-            if message.channel.id == server.get_channel_id():
-                await asyncio.sleep(0.5)
-                await message.delete()
-                if server.vc:
-                    if server.is_member_in_call(message.author):
-                        await add_song(server, message)
-                else:
-                    if server.is_member_connected(message.author):
-                        await add_song(server, message)
-
-    async def on_raw_message_delete(self, payload):
-        print("on_raw_message_delete")
-        message_id = payload.message_id
-        channel_id = payload.channel_id
-        
-        server = self.get_server_from_channel_id(channel_id)
-        guild = client.get_guild(server.id)
-
-
-        server_message_id = server.book.message.id
-        if server_message_id == message_id:
-            self.servers.remove(server)
-            await asyncio.sleep(5)
-            await self._setup_guild(guild)
-
-    async def handle_play_pause(self, server, member):
-
-        if server.vc:
-            if server.is_member_in_call(member):
-                if server.is_playing():
-                    await server.pause_audio()
-                elif server.is_paused():
-                    await server.resume_audio()
-                else:
-                    await server.play_audio()
-
-        if not server.vc:
-            if server.is_member_connected(member):
-                await server.join_channel(member.voice.channel.id)
-                await asyncio.sleep(5)
-                await server.play_audio()
-
-    async def on_ready(self):
-        for guild in client.guilds:
-            await self._setup_guild(guild)
-        
-        print("Bot Online!")
-        print("Name: {}".format(self.user.name))
-        print("ID: {}".format(self.user.id))
-        print("Version: {}".format(discord.__version__))
-        print(discord.opus.is_loaded())
-
-    #Respond to reacts to the message
-    async def on_raw_reaction_add(self, payload:discord.RawReactionActionEvent):
-        member = payload.member
-        emoji = payload.emoji
-        message_id = payload.message_id
-        channel_id = payload.channel_id
-        if client.user == member:
-            return
-
-        server = self.get_server_from_channel_id(channel_id)
-        if server:
-            book = server.book
-            result = await book.handle_react(emoji, member, message_id)
-            
-        else:
-            result = -1
-
-
-        if result == -1:
-            return
-        
-        elif result == 1:
-            await server.to_start()
-
-        elif result == 2:
-            await server.previous_audio()
-
-        elif result == 3:
-            await self.handle_play_pause(server, member)
-        
-        elif result == 4:
-            await server.next_audio()
-
-        elif result == 5:
-            await server.to_end()
-            
-        elif result == 6:
-            server.remove_song(server.current)
-
-        elif result == 7:
-            await server.stop_audio()
-
-        print("React result ", result)
-
-    async def on_voice_state_update(self, member, before, after):
-        if before.channel:
-            server = self.get_server_from_id(before.channel.guild.id)
-            if server:
-                if server.is_bot_alone():
-                    await server.stop_audio()
 
 if __name__ == "__main__":
     intents = discord.Intents.all()
