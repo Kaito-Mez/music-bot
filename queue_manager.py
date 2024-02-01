@@ -1,9 +1,8 @@
-from concurrent.futures import process
-from operator import index
+from auth import get_soundcloud_auth, get_spotify_auth
 from django.utils.text import slugify
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
-from sclib import SoundcloudAPI, Track
+from sclib import SoundcloudAPI
 from concurrent.futures.thread import ThreadPoolExecutor
 import os
 import pytube
@@ -12,7 +11,7 @@ import discord
 import asyncio
 import time
 import subprocess
-from subprocess import PIPE, TimeoutExpired
+from subprocess import PIPE
 from io import BytesIO 
 from random import shuffle
 
@@ -27,11 +26,10 @@ class ServerManager():
         self.queue = []
         self.index = 0
         self.executor = ThreadPoolExecutor(thread_name_prefix="ServerManagerExecutor")
-        auth = self._get_spotify_auth()
+        auth = get_spotify_auth()
         self.spotify = Spotify(auth_manager=SpotifyClientCredentials(client_id=auth[0], client_secret=auth[1]))
         self.soundcloud = SoundcloudAPI()
 
-        
         self.channel = channel
         self.id = id
         self.book = book
@@ -76,7 +74,6 @@ class ServerManager():
                 except discord.errors.ClientException as e:
                     pass
 
-
     async def stop_audio(self):
         if self.vc:
             try:
@@ -105,14 +102,12 @@ class ServerManager():
             except discord.errors.ClientException as e:
                 print("pause audio failed", e)
 
-
     async def next_audio(self):
         if self.vc:
             if self.is_paused() or self.is_playing():
                 self.vc.stop()
             else:    
                 self.handle_after()
-
 
     async def previous_audio(self):
         if self.vc:
@@ -161,7 +156,6 @@ class ServerManager():
             else:
                 self.handle_after()
 
-
     def is_playing(self):
         if self.vc:
             return self.vc.is_playing()
@@ -187,8 +181,6 @@ class ServerManager():
             self.vc.play(discord.FFmpegPCMAudio("./data/sounds/end.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.play_audio(), self.client.loop))
         self.closing = False
 
-
-
     def is_member_in_call(self, member):
         if member.voice and self.vc:
             if member.voice.channel == self.vc.channel:
@@ -210,7 +202,6 @@ class ServerManager():
                 return True
 
         return False
-
 
     async def reset_player_info(self, update=True):
         self.book.remove_page(1)
@@ -281,14 +272,6 @@ class ServerManager():
         dic["value"] = value
         return dic
 
-
-
-
-
-
-
-
-
     def remove_song(self, song):
         self.index -= 1
         if song:
@@ -314,30 +297,6 @@ class ServerManager():
         else:
             asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
 
-
-
-
-
-
-
-
-
-    def _get_spotify_auth(self):
-        data = []
-        with open("./data/spotifyToken.txt", "r") as f:
-            data.append(f.readline())
-
-        with open("./data/spotifySecret.txt", "r") as f:
-            data.append(f.readline())
-
-        return data
-
-    def _get_soundcloud_auth(self):
-        with open("./data/soundcloudToken.txt", "r") as f:
-            data = f.readline()
-        return data
-
-
     def get_downloads(self, max_num):
         l = []
 
@@ -346,7 +305,6 @@ class ServerManager():
                 if self.display_song(index, max_num):
                     l.append(song)
         return l
-
 
     def get_message_id(self):
         return self.book.message.id
@@ -446,18 +404,6 @@ class ServerManager():
         if self.current:
             return f"./sound/{self.current.filename}"
 
-    
-
-
-
-
-
-    
-
-
-
-
-
     def _download(self, searchterm, song):
         data = []
         if "spotify.com" in searchterm:
@@ -513,8 +459,6 @@ class ServerManager():
                 os.remove(path)
         
         print("finished processing")
-        
-
 
     def _download_sp(self, url, song):
         print("SPOTIFY")
@@ -591,4 +535,4 @@ class ServerManager():
             self.remove_song_duplicates(filename)
 
         return {"filename":filename, "thumbnail":track.artwork_url, 
-            "title":title, "duration":track.duration, "url":track.permalink_url}
+            "title":title, "duration":int(track.duration/1000), "url":track.permalink_url}

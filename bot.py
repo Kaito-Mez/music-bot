@@ -1,4 +1,4 @@
-from auth import *
+from auth import get_token
 from discord.errors import ClientException, Forbidden
 from email import message
 from libs.disc_gui import discordBook
