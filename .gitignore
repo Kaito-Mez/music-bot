@@ -167,3 +167,9 @@ cython_debug/
 data/*.txt
 data/soundcloudToken.txt
 data/soundcloudToken.txt
+.vscode/*
+pytube/__cache__/*
+pytube/__pycache__/*
+discordToken.txt
+spotifySecret.txt
+spotifyToken.txt
