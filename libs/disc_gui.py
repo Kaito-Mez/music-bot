@@ -230,10 +230,11 @@ class discordBook:
     
     #clears all un-needed reacts then repopulates
     async def update_reacts(self, purge = False):
+        print("Updating Reacts")
         try:
             #updates current reactions on the message
             async def get_current():
-                cur_message = discord.utils.get(await self.message.channel.history(limit=10).flatten(), id = self.message.id)
+                cur_message = discord.utils.get([ i async for i in self.message.channel.history(limit=10) ], id = self.message.id)
                 cur_reactions = cur_message.reactions
                 return(cur_reactions)
 
@@ -284,7 +285,7 @@ class discordBook:
                     break
                 
         except (AttributeError, discord.NotFound) as e:
-            print(e)
+            print("failed to create reacts", e)
 
     #needs to be called in a loop in order to get multiple responses
     #returns the index number of whatever react gets clicked
