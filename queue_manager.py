@@ -5,7 +5,9 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from sclib import SoundcloudAPI
 from concurrent.futures.thread import ThreadPoolExecutor
 import os
+import sys
 import pytube
+from ytdlp import ytdownloader
 from models.song import Song
 import discord
 import asyncio
@@ -317,13 +319,13 @@ class ServerManager():
 
     def is_same_message(self, message_id):
         return message_id == self.get_message_id()
-
+    #calls download which call pytube
     def download_all(self):
         for song in self.get_downloads(10):
             song.downloading = True
             future = self.executor.submit(self._download, song.title, song)
             future.add_done_callback(song.populate)
-
+    # song model section
     def add(self, searchterm:str, requestor):
         if "open.spotify.com/playlist/" in searchterm:
             playlist = self.spotify.playlist(searchterm)
@@ -411,7 +413,7 @@ class ServerManager():
 
         elif "soundcloud.com" in searchterm:
             data = self._download_sc(searchterm, song)
-        
+        #calls pytube
         else:
             data = self._download_yt(searchterm, song)
 
@@ -471,29 +473,34 @@ class ServerManager():
 
         return self._download_yt(searchterm, song)
         
-
+    #pytube location
     def _download_yt(self, searchterm, song):
         print("YOUTUBE")
+        # adds local path for yt-dlp functionality
+        sys.path.append(os.path.join(os.path.dirname(__file__), 'ytdlp'))
+        is_link = False
         if "https://www.youtube.com/watch?v=" in searchterm or "https://youtu.be/" in searchterm:
-            yt = pytube.YouTube(searchterm, use_oauth=True)
-        
+            is_link = True #yt = pytube.YouTube(searchterm, use_oauth=True)
+        yt = ytdownloader.download(searchterm, is_link)
+        '''
         else:
             search = pytube.Search(searchterm)
             url = search.results[0].watch_url
             yt = pytube.YouTube(url, use_oauth=True)
-
-        filename = slugify(yt.title)+".mp3"
+        '''
+        
+        filename = slugify(yt["title"])+".mp3"
         path = "./sound/"+filename
         buffer = BytesIO()
         
-        if yt.length > 10800:
+        if yt["duration"] > 10800:
             self.remove_song(song)
-
+        
         if not os.path.isfile(path):
             print("File not found")
             if not song.is_cancelled:
                 print("streaming to buffer")
-                itags = [251, 140, 139]
+                '''itags = [251, 140, 139]
                 stream = None
                 for i in itags:
                     if not stream:
@@ -501,7 +508,9 @@ class ServerManager():
                     else:
                         break
 
-                stream.stream_to_buffer(buffer)
+                stream.stream_to_buffer(buffer)'''
+                # output download of song to stdout then to buffer
+                ytdownloader.download(yt["url"], is_link, buffer)
             if not song.is_cancelled:
                 print("normalizing audio")
                 self.executor.submit(self.normalize_stream, buffer, path, song)
@@ -509,8 +518,8 @@ class ServerManager():
         else:
             self.remove_song_duplicates(filename)
 
-        return {"filename":filename, "thumbnail":yt.thumbnail_url, 
-            "title":yt.title, "duration":yt.length, "url":yt.watch_url}
+        return {"filename":filename, "thumbnail":yt["thumbnail"], 
+            "title":yt["title"], "duration":yt["length"], "url":yt["url"]}
 
     def _download_sc(self, url, song):
         track = self.soundcloud.resolve(url)
