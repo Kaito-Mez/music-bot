@@ -1,9 +1,7 @@
 import sys
 import os
-#sys.path.append(os.path.join(os.path.dirname(__file__), 'yt_dlp'))
 from yt_dlp import YoutubeDL
 from contextlib import redirect_stdout
-from io import BytesIO
 
 
 def download(searchterm, is_link, buffer = None):

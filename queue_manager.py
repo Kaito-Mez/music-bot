@@ -6,8 +6,7 @@ from sclib import SoundcloudAPI
 from concurrent.futures.thread import ThreadPoolExecutor
 import os
 import sys
-import pytube
-from ytdlp import ytdownloader
+import ytdownloader
 from models.song import Song
 import discord
 import asyncio
@@ -519,7 +518,7 @@ class ServerManager():
             self.remove_song_duplicates(filename)
 
         return {"filename":filename, "thumbnail":yt["thumbnail"], 
-            "title":yt["title"], "duration":yt["length"], "url":yt["url"]}
+            "title":yt["title"], "duration":yt["duration"], "url":yt["url"]}
 
     def _download_sc(self, url, song):
         track = self.soundcloud.resolve(url)
