@@ -273,7 +273,7 @@ class ServerManager():
         dic["value"] = value
         return dic
 
-    async def remove_song(self, song):
+    def remove_song(self, song):
         self.index -= 1
         if song:
             song.is_cancelled = True
