@@ -294,9 +294,17 @@ class ServerManager():
                 time.sleep(0.1)
 
         if len(self.queue) == 0:
-            asyncio.run_coroutine_threadsafe(self.reset_player_info(), self.client.loop)
+            if self.vc:
+                try:
+                    self.vc.play(discord.FFmpegPCMAudio("./data/sounds/remove.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.reset_player_info(), self.client.loop))
+                except discord.errors.ClientException as e:
+                    print("Leave_channel_broke", e)
         else:
-            asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop)
+            if self.vc:
+                try:
+                    self.vc.play(discord.FFmpegPCMAudio("./data/sounds/remove.mp3"), after= lambda _:asyncio.run_coroutine_threadsafe(self.update_player_info(), self.client.loop))
+                except discord.errors.ClientException as e:
+                    print("Leave_channel_broke", e)
 
     def get_downloads(self, max_num):
         l = []
